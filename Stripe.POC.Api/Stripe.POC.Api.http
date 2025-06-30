@@ -1,0 +1,61 @@
+@host = https://localhost:5433
+@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3OTA5OTMwMjJ9.gINohAHdQr31tfYpP7y0RZmEriUOk09byxZD-hp1sAI
+
+POST {{host}}/inventory/seed
+Accept: application/json
+Authorization: {{token}}
+
+###
+
+GET {{host}}/inventory/performances/10000/seats
+Accept: application/json
+Authorization: {{token}}
+
+###
+GET {{host}}/inventory/events
+Accept: application/json
+Authorization: {{token}}
+
+###
+
+POST {{host}}/orders/create
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+    "seatIds": [1,2,3,4,5]
+}
+
+> {%
+  client.global.set("basketId", response.body.basketId);
+%}
+
+###
+
+POST {{host}}/orders/{{basketId}}/add-seats
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "seatIds": [10,20,30]
+}
+###
+
+POST {{host}}/stripe/checkout-session/create
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "basketId": "{{basketId}}"
+}
+
+###
+
+GET {{host}}/orders/{{basketId}}/tickets
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
+

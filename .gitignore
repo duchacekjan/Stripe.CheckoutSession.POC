@@ -1,0 +1,14 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+
+**/package-lock.json
+**/.idea/
+**/.DS_Store
+**/*DotSettings.user
+**/*.rdb
+/nginx/
+
+/stripe-poc-client-app/certs/
