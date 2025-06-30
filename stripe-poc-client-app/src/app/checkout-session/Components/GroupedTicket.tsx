@@ -65,41 +65,42 @@ const GroupedTicket: React.FC<{
       </div>
 
       {/* Second row: Date */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        marginBottom: '8px'
-      }}>
-        <span style={{fontSize: '12pt'}}>{info.performanceId !== -1 ?
-          new Date(info.performanceDate).toLocaleDateString()
-        : 'Code:'}</span>
-      </div>
+      {info.performanceId !== -1 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          marginBottom: '8px'
+        }}>
+          <span style={{fontSize: '12pt'}}>new Date(info.performanceDate).toLocaleDateString</span>
+        </div>
+      )}
 
       {/* Third row: Seats */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        width: '100%',
-        alignItems: 'center',
-        marginBottom: '8px'
-      }}>
-        {tickets.map((ticket) => (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '2px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '4px',
-              marginRight: '8px',
-              cursor: 'pointer'
-            }}
-            onClick={() => ticketsRemoved([ticket])}
-            key={ticket.seatId}>
+      {info.performanceId !== -1 && (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          width: '100%',
+          alignItems: 'center',
+          marginBottom: '8px'
+        }}>
+          {tickets.map((ticket) => (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '2px',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '4px',
+                marginRight: '8px',
+                cursor: 'pointer'
+              }}
+              onClick={() => ticketsRemoved([ticket])}
+              key={ticket.seatId}>
             <span style={{
               marginRight: '8px',
               textAlign: 'center',
@@ -107,9 +108,10 @@ const GroupedTicket: React.FC<{
             }}>
               {ticket.performanceId === -1 ? ticket.seatRow : `${ticket.seatRow} ${ticket.seatNumber}`}
             </span>
-          </div>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
 
 
       {/* Fourth row: Row and seat number */}

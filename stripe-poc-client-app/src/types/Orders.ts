@@ -30,6 +30,10 @@ export interface RemoveTicketsResponse {
   message?: string;
 }
 
+export interface SetPaidResponse {
+  voucherCodes: string[];
+}
+
 export enum UpdateStatus {
   Updated = 'updated',
   Emptied = 'emptied',

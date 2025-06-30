@@ -65,7 +65,7 @@ public static class BuyVoucher
                 [
                     new Seat
                     {
-                        Row = Guid.NewGuid().ToString(),
+                        Row = string.Empty, // Vouchers do not have a row they have code. Generated upon payment
                         Number = 0,
                         PriceId = priceId,
                         PerformanceId = -1 // Voucher-specific performance

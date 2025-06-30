@@ -7,7 +7,7 @@ import {
   CreateOrderResponse,
   GetTicketsResponse,
   RemoveTicketsRequest,
-  RemoveTicketsResponse
+  RemoveTicketsResponse, SetPaidResponse
 } from "@/types/Orders";
 import {
   CheckoutSessionCreateRequest,
@@ -80,5 +80,10 @@ export const buyVoucher = async (price: number, basketId?: string): Promise<BuyV
     basketId: basketId
   };
   const response = await apiClient.post<BuyVoucherResponse>('/vouchers/buy', request);
+  return response.data;
+}
+
+export const setPaid = async (basketId: string): Promise<SetPaidResponse> => {
+  const response = await apiClient.post<SetPaidResponse>(`/orders/${basketId}/set-paid`);
   return response.data;
 }
