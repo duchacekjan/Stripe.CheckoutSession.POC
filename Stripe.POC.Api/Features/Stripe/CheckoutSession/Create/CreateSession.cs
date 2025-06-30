@@ -133,7 +133,7 @@ public static class CreateSession
         private static SessionLineItemPriceDataProductDataOptions CreateProductData(List<TicketDTO> tickets, TicketDTO info) => new()
         {
             Name = info.EventName,
-            Description = $"Performance date: {info.PerformanceDate}\nSeats: {string.Join(", ", tickets.Select(s => $"{s.SeatRow}{s.SeatNumber}"))}",
+            Description = Description(info, tickets),
             Metadata = new Dictionary<string, string>
             {
                 { "eventId", info.EventId.ToString() },
@@ -166,5 +166,10 @@ public static class CreateSession
             var session = await _checkoutSessionService.Value.CreateAsync(options, cancellationToken: ct);
             return (session.Id, session.ClientSecret);
         }
+        
+        private static string Description(TicketDTO info, List<TicketDTO> tickets) =>
+            info.PerformanceId == -1
+                ? $"Codes: {string.Join(", ", tickets.Select(s => $"{s.SeatRow}"))}"
+                : $"Performance date: {info.PerformanceDate}\nSeats: {string.Join(", ", tickets.Select(s => $"{s.SeatRow}{s.SeatNumber}"))}";
     }
 }

@@ -116,7 +116,8 @@ public static class AddSeats
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
                             Name = orderItemInfo.Name,
-                            Description = $"Performance date: {orderItemInfo.PerformanceDate}\nSeats: {string.Join(", ", seats.Select(s => $"{s.Row}{s.Number}"))}",
+                            Description = Description(orderItemInfo.PerformanceId, orderItemInfo.PerformanceDate,
+                                seats.Select(s => (s.Row, s.Number))), //$"Performance date: {orderItemInfo.PerformanceDate}\nSeats: {string.Join(", ", seats.Select(s => $"{s.Row}{s.Number}"))}",
                             Metadata = new Dictionary<string, string>
                             {
                                 { "eventId", orderItemInfo.EventId.ToString() },
@@ -142,5 +143,10 @@ public static class AddSeats
 
             await service.UpdateAsync(sessionId, updateOptions, cancellationToken: cancellationToken);
         }
+
+        private static string Description(long performanceId, DateTime performanceDate, IEnumerable<(string SeatRow, uint SeatNumber)> tickets) =>
+            performanceId == -1
+                ? $"Codes: {string.Join(", ", tickets.Select(s => $"{s.SeatRow}"))}"
+                : $"Performance date: {performanceDate}\nSeats: {string.Join(", ", tickets.Select(s => $"{s.SeatRow}{s.SeatNumber}"))}";
     }
 }
