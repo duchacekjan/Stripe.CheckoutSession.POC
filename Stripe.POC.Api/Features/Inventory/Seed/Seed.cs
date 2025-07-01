@@ -32,7 +32,7 @@ public static class Seed
         {
             new()
             {
-                Id = -1,
+                Id = -2,
                 PerformanceDate = DateTime.MaxValue,
                 DurationMinutes = 1
             }

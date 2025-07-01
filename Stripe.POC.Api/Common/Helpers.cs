@@ -6,6 +6,10 @@ namespace POC.Api.Common;
 
 public static class Helpers
 {
+    private const string Currency = "gbp";
+    private const string PerformanceIdKey = "performanceId";
+    private const string PriceIdKey = "priceId";
+    private const string EventIdKey = "eventId";
     public static List<TicketDTO> MatchingTickets(this LineItem lineItem, IEnumerable<TicketDTO> tickets)
     {
         var (hasMetadata, eventId, performanceId, priceId) = lineItem.GetLineItemInfo();
@@ -49,9 +53,9 @@ public static class Helpers
 
     private static (bool HasMetadata, long EventId, long PerformanceId, long PriceId) GetLineItemInfo(this LineItem lineItem)
     {
-        var hasMetadata = lineItem.Metadata.TryGetValue("eventId", out var eventId)
-                          & lineItem.Metadata.TryGetValue("performanceId", out var performanceId)
-                          & lineItem.Metadata.TryGetValue("priceId", out var priceId);
+        var hasMetadata = lineItem.Metadata.TryGetValue(EventIdKey, out var eventId)
+                          & lineItem.Metadata.TryGetValue(PerformanceIdKey, out var performanceId)
+                          & lineItem.Metadata.TryGetValue(PriceIdKey, out var priceId);
         return (
             hasMetadata,
             eventId != null ? long.Parse(eventId) : -1,
@@ -62,14 +66,14 @@ public static class Helpers
 
     private static Dictionary<string, string> CreateMetadata(TicketDTO info) => new()
     {
-        { "eventId", info.EventId.ToString() },
-        { "performanceId", info.PerformanceId.ToString() },
-        { "priceId", info.PriceId.ToString() },
+        { EventIdKey, info.EventId.ToString() },
+        { PerformanceIdKey, info.PerformanceId.ToString() },
+        { PriceIdKey, info.PriceId.ToString() },
     };
 
     private static SessionLineItemPriceDataOptions CreatePriceData(List<TicketDTO> tickets, TicketDTO info) => new()
     {
-        Currency = "gbp",
+        Currency = Currency,
         ProductData = CreateProductData(tickets, info),
         UnitAmount = (long)(info.Price * 100)
     };
