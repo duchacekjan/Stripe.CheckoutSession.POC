@@ -1,5 +1,6 @@
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using POC.Api.Features.Inventory.Seed;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
 using Order = POC.Api.Persistence.Entities.Order;
@@ -65,10 +66,10 @@ public static class BuyVoucher
                 [
                     new Seat
                     {
-                        Row = string.Empty, // Vouchers do not have a row they have code. Generated upon payment
+                        Row = Guid.NewGuid().ToString(),
                         Number = 0,
                         PriceId = priceId,
-                        PerformanceId = -1 // Voucher-specific performance
+                        PerformanceId = Seed.VoucherPerformanceId
                     }
                 ]
             };

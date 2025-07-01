@@ -7,6 +7,12 @@ namespace POC.Api.Features.Inventory.Seed;
 
 public static class Seed
 {
+    public const long VoucherEventId = -1;
+    public const long BookingProtectionEventId = -2;
+    public const long VoucherPerformanceId = -1;
+    public const long BookingProtectionPerformanceId = -2;
+    public const long BookingProtectionPriceId = -1;
+
     public class Endpoint(AppDbContext dbContext) : EndpointWithoutRequest<EmptyResponse>
     {
         public override void Configure()
@@ -68,7 +74,7 @@ public static class Seed
         {
             var row = Row.Start;
             var result = new List<Seat>();
-            foreach (var price in PriceSeed)
+            foreach (var price in PriceSeed.Where(w => w.Id > 0))
             {
                 result.AddRange(GenerateRowOfSeatsForPrice(performanceId, row, price, seatsPerRow));
                 row++;
@@ -107,13 +113,27 @@ public static class Seed
             var rnd = new Random();
             yield return new Event
             {
-                Id = -1,
+                Id = VoucherEventId,
                 Name = "Voucher",
                 Performances = new List<Performance>
                 {
                     new()
                     {
-                        Id = -1,
+                        Id = VoucherPerformanceId,
+                        PerformanceDate = DateTime.MaxValue,
+                        DurationMinutes = 1
+                    }
+                }
+            };
+            yield return new Event
+            {
+                Id = BookingProtectionEventId,
+                Name = "Booking Protection",
+                Performances = new List<Performance>
+                {
+                    new()
+                    {
+                        Id = BookingProtectionPerformanceId,
                         PerformanceDate = DateTime.MaxValue,
                         DurationMinutes = 1
                     }
@@ -132,12 +152,13 @@ public static class Seed
 
         private static List<Price> PriceSeed =>
         [
+            new() { Id = BookingProtectionPriceId, Name = "Booking Protection", Amount = 5.00m },
             new() { Id = 1, Name = "Standard", Amount = 50.00m },
             new() { Id = 2, Name = "VIP", Amount = 100.00m },
             new() { Id = 3, Name = "Balcony", Amount = 75.00m },
             new() { Id = 4, Name = "Box", Amount = 150.00m },
             new() { Id = 5, Name = "Student Discount", Amount = 30.00m },
-            new() { Id = 6, Name = "Obstructed View", Amount = 30.00m }
+            new() { Id = 6, Name = "Obstructed View", Amount = 30.00m },
         ];
 
         public class Row

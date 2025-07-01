@@ -58,22 +58,26 @@ const OrderSuccessful: React.FC = () => {
 
   if (status === 'complete') {
     return (
-      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px'}}>
-        <div>
-          <p>
-            We appreciate your business! <br/>
-            A confirmation email will be sent to <span style={{fontWeight: 'bold'}}>{customerEmail}</span>.<br/>
+      <>
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px'}}>
+          <div>
+            <p>
+              We appreciate your business! <br/>
+              A confirmation email will be sent to <span style={{fontWeight: 'bold'}}>{customerEmail}</span>.<br/>
 
-            If you have any questions, please email <a href="mailto:orders@example.com">orders@example.com</a>.
-          </p>
-          <button onClick={redirectToSeatPlan} style={{marginTop: '8px'}}>
-            Continue Shopping
-          </button>
+              If you have any questions, please email <a href="mailto:orders@example.com">orders@example.com</a>.
+            </p>
+            <button onClick={redirectToSeatPlan} style={{marginTop: '8px'}}>
+              Continue Shopping
+            </button>
+          </div>
+          {vouchers.length > 0 && (
+            <div>
+              <VouchersSummary voucherCodes={vouchers}/>
+            </div>
+          )}
         </div>
-        <div>
-          <VouchersSummary voucherCodes={vouchers}/>
-        </div>
-      </div>
+      </>
     )
   } else if (status === 'open') {
     return null;

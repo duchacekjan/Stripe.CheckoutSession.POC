@@ -34,6 +34,10 @@ export interface SetPaidResponse {
   voucherCodes: string[];
 }
 
+export interface SetBookingProtectionRequest {
+  enableProtection: boolean;
+}
+
 export enum UpdateStatus {
   Updated = 'updated',
   Emptied = 'emptied',

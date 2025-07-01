@@ -12,11 +12,13 @@ import {useRouter} from "next/navigation";
 import CheckoutSummary from "@/app/checkout-session/Components/CheckoutSummary";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || '', {
-  betas: ['custom_checkout_server_updates_1'],
+  betas: ['custom_checkout_server_updates_1', 'custom_checkout_adaptive_pricing_2'],
 });
 
 const CheckoutSessionPage: React.FC = () => {
   const [basketId, setBasketId] = useState<string | null>(null);
+  const [hasPerformance, setHasPerformance] = useState<boolean>(false);
+  const [bookingProtection, setBookingProtection] = useState<boolean>(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -126,9 +128,17 @@ const CheckoutSessionPage: React.FC = () => {
             padding: '8px'
           }}>
             <div style={{width: '400px'}}>
-              <CheckoutSessionForm/>
+              <CheckoutSessionForm
+                basketId={basketId}
+                hasPerformance={hasPerformance}
+                bookingProtection={bookingProtection}
+                setBookingProtection={setBookingProtection}
+              />
             </div>
-            <CheckoutSummary/>
+            <CheckoutSummary
+              setHasPerformance={setHasPerformance}
+              bookingProtection={bookingProtection}
+              setBookingProtection={setBookingProtection}/>
           </div>
         </div>
 

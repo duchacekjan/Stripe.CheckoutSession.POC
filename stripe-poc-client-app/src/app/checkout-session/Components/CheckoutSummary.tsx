@@ -8,7 +8,13 @@ import GroupedTicket from "@/app/checkout-session/Components/GroupedTicket";
 import {useCheckout} from "@stripe/react-stripe-js";
 import {useRouter} from "next/navigation";
 
-const CheckoutSummary: React.FC = () => {
+interface CheckoutSummaryProps {
+  setHasPerformance: (hasPerformance: boolean) => void;
+  bookingProtection: boolean;
+  setBookingProtection: (protection: boolean) => void;
+}
+
+const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, bookingProtection, setBookingProtection}) => {
   const checkout = useCheckout();
   const router = useRouter();
   const [basketId, setBasketId] = useState<string | null>(null);
@@ -21,6 +27,8 @@ const CheckoutSummary: React.FC = () => {
       getOrderTickets(currentBasketId)
         .then(response => {
           setTickets(response.tickets);
+          setHasPerformance(response.tickets.some(ticket => ticket.performanceId > 0));
+          setBookingProtection(response.tickets.some(ticket => ticket.performanceId === -2));
         })
         .catch(error => {
           console.error("Error fetching tickets:", error);
@@ -29,7 +37,7 @@ const CheckoutSummary: React.FC = () => {
     } else {
       console.log("No basket ID found. Redirecting to seat plan.");
     }
-  }, []);
+  }, [bookingProtection]);
 
   const groupedTickets = tickets.reduce((acc, ticket) => {
     const rowKey = `${ticket.performanceId}-${ticket.priceId}`;

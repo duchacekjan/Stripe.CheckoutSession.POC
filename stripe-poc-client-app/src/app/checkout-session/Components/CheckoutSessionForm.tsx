@@ -1,67 +1,37 @@
 "use client";
 
-import {CheckoutContextValue, CurrencySelectorElement, PaymentElement, useCheckout } from "@stripe/react-stripe-js";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import {CheckoutContextValue, CurrencySelectorElement, PaymentElement, useCheckout} from "@stripe/react-stripe-js";
+import {useRouter} from "next/navigation";
+import {useState} from "react";
+import CustomerElements from "@/app/checkout-session/Components/CustomerElements";
+import {updatedBookingProtection} from "@/utils/api";
 
-const validateEmail = async (email:string, checkout: CheckoutContextValue) => {
+interface CheckoutSessionFormProps {
+  basketId: string;
+  hasPerformance: boolean;
+  bookingProtection: boolean;
+  setBookingProtection: (protection: boolean) => void;
+}
+
+const validateEmail = async (email: string, checkout: CheckoutContextValue) => {
   const updateResult = await checkout.updateEmail(email);
   const isValid = updateResult.type !== "error";
 
-  return { isValid, message: !isValid ? updateResult.error.message : null };
+  return {isValid, message: !isValid ? updateResult.error.message : null};
 }
 
-// @ts-ignore
-const EmailInput = ({ email, setEmail, error, setError }) => {
-  const checkout = useCheckout();
-
-  const handleBlur = async () => {
-    if (!email) {
-      return;
-    }
-
-    const { isValid, message } = await validateEmail(email, checkout);
-    if (!isValid) {
-      setError(message);
-    }
-  };
-
-  const handleChange = (e:any) => {
-    setError(null);
-    setEmail(e.target.value);
-  };
-
-  return (
-    <>
-      <label>
-        Email
-        <input
-          id="email"
-          type="text"
-          value={email}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          style={{ fontSize: '12pt' }}
-          placeholder="you@example.com"
-        />
-      </label>
-      {error && <div id="email-errors">{error}</div>}
-    </>
-  );
-};
-
-const CheckoutSessionForm: React.FC = () => {
+const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasPerformance, bookingProtection, setBookingProtection}) => {
   const router = useRouter();
   const [email, setEmail] = useState<string>('');
-  const [emailError, setEmailError] = useState<string|null>(null);
-  const [message, setMessage] = useState<string|null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
+
   const checkout = useCheckout();
   // checkout.onChange('change', (session) => {
   //   // Handle changes to the checkout session
   // });
-  
+
   const handleShopMore = () => {
     router.push('/');
   }
@@ -70,12 +40,12 @@ const CheckoutSessionForm: React.FC = () => {
     router.push('/vouchers');
   }
 
-  const handleSubmit = async (e:any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     setIsLoading(true);
 
-    const { isValid, message } = await validateEmail(email, checkout);
+    const {isValid, message} = await validateEmail(email, checkout);
     if (!isValid) {
       setEmailError(message);
       setMessage(message);
@@ -97,51 +67,49 @@ const CheckoutSessionForm: React.FC = () => {
     setIsLoading(false);
   };
 
+  const handleBookingProtectionChange = async (protection: boolean) => {
+    try {
+      await updatedBookingProtection(basketId, protection);
+      setBookingProtection(protection);
+    } catch (error) {
+      setMessage("Failed to update booking protection. Please try again later.");
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit}>
-      <div style={{ display: 'flex', gap: '8px'}}>
-        <button style={{ marginBottom: '8px' }}
-                onClick={handleShopMore}>
-          Shop more
-        </button>
-        <button style={{ marginBottom: '8px' }}
-                onClick={handleBuyVoucher}>
-          Buy voucher
-        </button>
-      </div>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        border: '1px solid #e5e7eb',
-        padding: '8px',
-        marginBottom: '8px'
-      }}>
-        <h4>Contact info</h4>
-        <EmailInput
+      <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+        <div style={{display: 'flex', gap: '8px'}}>
+          <button style={{marginBottom: '8px'}}
+                  onClick={handleShopMore}>
+            Shop more
+          </button>
+          <button style={{marginBottom: '8px'}}
+                  onClick={handleBuyVoucher}>
+            Buy voucher
+          </button>
+        </div>
+        <CustomerElements
           email={email}
           setEmail={setEmail}
           error={emailError}
           setError={setEmailError}
+          validateEmail={validateEmail}
+          hasPerformance={hasPerformance}
+          bookingProtection={bookingProtection}
+          setBookingProtection={handleBookingProtectionChange}
         />
-      </div>
-      
-      <h4>Payment</h4>
-      <PaymentElement id="payment-element" />
-      <div style={{display: 'flex', gap: '8px', marginTop: '8px'}}>
+
+        <h4>Payment</h4>
+        <PaymentElement id="payment-element"/>
+        <CurrencySelectorElement/>
         <button disabled={isLoading} id="submit">
-          {isLoading ? (
-            <div className="spinner"></div>
-          ) : (
-            `Pay ${checkout.total.total.amount} now`
-          )}
+          Pay {checkout.total.total.amount} now
         </button>
-        {/*<CurrencySelectorElement />*/}
+        {/* Show any error or success messages */}
+        {message && <div style={{color: 'red', fontSize: '11pt'}}>{message}</div>}
       </div>
-      {/* Show any error or success messages */}
-      {message && <div id="payment-message">{message}</div>}
+
     </form>
   );
 }

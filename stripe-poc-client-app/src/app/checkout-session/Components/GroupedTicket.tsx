@@ -35,37 +35,39 @@ const GroupedTicket: React.FC<{
           textAlign: 'left',
           fontSize: '12pt'
         }}>{info.eventName}</span>
-        <button
-          onClick={() => ticketsRemoved(tickets)}
-          style={{
-            color: '#ef4444',
-            background: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '24px',
-            width: '32px',
-            marginLeft: '4px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.color = '#dc2626';
-            e.currentTarget.style.borderColor = '#dc2626';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.color = '#ef4444';
-            e.currentTarget.style.borderColor = '#e5e7eb';
-          }}
-        >
-          ✕
-        </button>
+        {info.performanceId > -2 && (
+          <button
+            onClick={() => ticketsRemoved(tickets)}
+            style={{
+              color: '#ef4444',
+              background: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '24px',
+              width: '32px',
+              marginLeft: '4px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.color = '#dc2626';
+              e.currentTarget.style.borderColor = '#dc2626';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.color = '#ef4444';
+              e.currentTarget.style.borderColor = '#e5e7eb';
+            }}
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Second row: Date */}
-      {info.performanceId !== -1 && (
+      {info.performanceId > 0  && (
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -74,12 +76,12 @@ const GroupedTicket: React.FC<{
           alignItems: 'center',
           marginBottom: '8px'
         }}>
-          <span style={{fontSize: '12pt'}}>new Date(info.performanceDate).toLocaleDateString</span>
+          <span style={{fontSize: '12pt'}}>{new Date(info.performanceDate).toLocaleDateString()}</span>
         </div>
       )}
 
       {/* Third row: Seats */}
-      {info.performanceId !== -1 && (
+      {info.performanceId > 0 && (
         <div style={{
           display: 'flex',
           flexDirection: 'row',
@@ -106,7 +108,7 @@ const GroupedTicket: React.FC<{
               textAlign: 'center',
               fontSize: '12pt'
             }}>
-              {ticket.performanceId === -1 ? ticket.seatRow : `${ticket.seatRow} ${ticket.seatNumber}`}
+              {`${ticket.seatRow} ${ticket.seatNumber}`}
             </span>
             </div>
           ))}

@@ -87,3 +87,10 @@ export const setPaid = async (basketId: string): Promise<SetPaidResponse> => {
   const response = await apiClient.post<SetPaidResponse>(`/orders/${basketId}/set-paid`);
   return response.data;
 }
+
+export const updatedBookingProtection = async (basketId: string, enableProtection: boolean): Promise<void> => {
+  const request = {
+    enableProtection: enableProtection
+  };
+  await apiClient.post<void>(`/orders/${basketId}/set-booking-protection`, request);
+}

@@ -47,10 +47,9 @@ public static class SetPaid
             var vouchers = await dbContext.Seats
                 .Where(w => w.PerformanceId == -1)
                 .Where(s => s.OrderItemId != null && s.OrderItem!.Order.BasketId == req.BasketId)
+                .Select(s => s.Row)
                 .ToListAsync(ct);
-            vouchers.ForEach(f => f.Row = Guid.NewGuid().ToString());
-            await dbContext.SaveChangesAsync(ct);
-            await SendOkAsync(new Response(vouchers.Select(s => s.Row).ToList()), ct);
+            await SendOkAsync(new Response(vouchers), ct);
         }
     }
 }

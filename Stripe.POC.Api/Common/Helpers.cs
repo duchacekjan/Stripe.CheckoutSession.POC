@@ -10,6 +10,6 @@ public static class Helpers
 
     public static string GetTicketsDescription(long performanceId, DateTime performanceDate, IEnumerable<(string SeatRow, uint SeatNumber)> tickets) =>
         performanceId == -1
-            ? string.Empty
+            ? string.Join(", ", tickets.Select(s => s.SeatRow))
             : $"Performance date: {performanceDate}\nSeats: {string.Join(", ", tickets.Select(s => $"{s.SeatRow}{s.SeatNumber}"))}";
 }
