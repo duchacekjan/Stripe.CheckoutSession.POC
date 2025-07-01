@@ -16,13 +16,6 @@ const RefundPage: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    const queryString = window.location.search;
-    const urlParams = new URLSearchParams(queryString);
-    const status = urlParams.get('status');
-    if (status) {
-      setStatus(status);
-      return;
-    }
     setIsLoading(true);
     getPaidOrders()
       .then((response) => {
@@ -35,12 +28,6 @@ const RefundPage: React.FC = () => {
         setIsLoading(false);
       });
   }, []);
-
-  useEffect(() => {
-    if (status === 'refunded') {
-      router.push('/');
-    }
-  }, [status]);
 
   const handleReload = () => {
     setError(null);
@@ -72,7 +59,7 @@ const RefundPage: React.FC = () => {
       const refundedAmount = selectedTickets.reduce((total, ticket) => total + ticket.price, 0);
       await refundOrder(basketId, refundedAmount);
       setIsLoading(false);
-      router.push('/refund?status=refunded');
+      setStatus('refunded');
     } catch (error) {
       setError((error as any).toString());
       setIsLoading(false);
@@ -84,7 +71,15 @@ const RefundPage: React.FC = () => {
   }
 
   if (status === 'refunded') {
-    return null;
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h1 style={{textAlign: 'center', marginTop: '20px'}}>Refund Successful</h1>
+        <button
+          onClick={handleRedirect}>
+          Seat selection
+        </button>
+      </div>
+    );
   }
 
   return (
