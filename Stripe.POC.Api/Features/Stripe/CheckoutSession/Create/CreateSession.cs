@@ -111,36 +111,11 @@ public static class CreateSession
 
             foreach (var performance in tickets.GroupBy(g => g.PerformanceId))
             {
-                items.AddRange(performance.GroupBy(g => g.PriceId).Select(priceBand => CreateItem(priceBand.ToList())));
+                items.AddRange(performance.GroupBy(g => g.PriceId).Select(priceBand => priceBand.ToLineItem()));
             }
 
             return items;
         }
-
-        private static SessionLineItemOptions CreateItem(List<TicketDTO> tickets) => new()
-        {
-            Quantity = tickets.Count,
-            PriceData = CreatePriceData(tickets, tickets.First())
-        };
-
-        private static SessionLineItemPriceDataOptions CreatePriceData(List<TicketDTO> tickets, TicketDTO info) => new()
-        {
-            Currency = "gbp",
-            ProductData = CreateProductData(tickets, info),
-            UnitAmount = (long)(info.Price * 100)
-        };
-
-        private static SessionLineItemPriceDataProductDataOptions CreateProductData(List<TicketDTO> tickets, TicketDTO info) => new()
-        {
-            Name = info.EventName,
-            Description = info.GetTicketsDescription(tickets),
-            Metadata = new Dictionary<string, string>
-            {
-                { "eventId", info.EventId.ToString() },
-                { "performanceId", info.PerformanceId.ToString() },
-                { "priceId", info.PriceId.ToString() },
-            }
-        };
 
         private async Task<(string SessionId, string ClientSecret)> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
         {

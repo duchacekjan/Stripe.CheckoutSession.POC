@@ -33,7 +33,7 @@ public static class BuyVoucher
 
         public override async Task HandleAsync(Request req, CancellationToken ct)
         {
-            long? orderId = null;
+            long? orderId;
             Guid basketId = req.BasketId ?? Guid.NewGuid();
             if (req.BasketId is null)
             {
@@ -69,7 +69,7 @@ public static class BuyVoucher
                         Row = Guid.NewGuid().ToString(),
                         Number = 0,
                         PriceId = priceId,
-                        PerformanceId = Seed.VoucherPerformanceId
+                        PerformanceId = Seed.Voucher.Performances.First().Id,
                     }
                 ]
             };

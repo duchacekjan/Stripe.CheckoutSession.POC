@@ -1,6 +1,7 @@
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using POC.Api.Common;
+using POC.Api.DTOs;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
 using Stripe.Checkout;
@@ -96,47 +97,42 @@ public static class AddSeats
                 .Where(w => seatIds.Contains(w.Id))
                 .Select(s => new
                 {
-                    s.Id, EventId = s.Performance.Event.Id, s.Performance.Event.Name, s.Performance.PerformanceDate, s.PerformanceId, s.PriceId, s.OrderItemId, s.Price.Amount, s.Row, s.Number
+                    s.Id, EventId = s.Performance.Event.Id, EventName = s.Performance.Event.Name, s.Performance.PerformanceDate, s.PerformanceId, s.PriceId, s.OrderItemId, s.Price.Amount, s.Row,
+                    s.Number
                 })
                 .ToListAsync(cancellationToken);
 
             var service = new SessionService();
             var lineItems = await service.LineItems.ListAsync(sessionId, cancellationToken: cancellationToken);
-            var newLineItems = new List<SessionLineItemOptions>();
-            foreach (var orderItem in items)
-            {
-                var seats = info.GroupBy(f => f.OrderItemId)
-                    .First(f => f.Key == orderItem.Id);
-                var orderItemInfo = seats.First();
-                var item = new SessionLineItemOptions
-                {
-                    PriceData = new SessionLineItemPriceDataOptions
-                    {
-                        UnitAmount = (long)(orderItemInfo.Amount * 100),
-                        Currency = "gbp",
-                        ProductData = new SessionLineItemPriceDataProductDataOptions
-                        {
-                            Name = orderItemInfo.Name,
-                            Description = Helpers.GetTicketsDescription(orderItemInfo.PerformanceId, orderItemInfo.PerformanceDate,
-                                seats.Select(s => (s.Row, s.Number))), //$"Performance date: {orderItemInfo.PerformanceDate}\nSeats: {string.Join(", ", seats.Select(s => $"{s.Row}{s.Number}"))}",
-                            Metadata = new Dictionary<string, string>
-                            {
-                                { "eventId", orderItemInfo.EventId.ToString() },
-                                { "performanceId", orderItemInfo.PerformanceId.ToString() },
-                                { "priceId", orderItemInfo.PriceId.ToString() },
-                            }
-                        }
-                    },
-                    Quantity = orderItem.Seats.Count
-                };
-                newLineItems.Add(item);
-            }
 
             var updatedItems = lineItems.Select(s => new SessionLineItemOptions
             {
-                Id = s.Id
+                Id = s.Id,
+                Quantity = s.Quantity
             }).ToList();
-            updatedItems.AddRange(newLineItems);
+
+            var groupedTickets = info
+                .GroupBy(k => k.OrderItemId.GetValueOrDefault())
+                .ToDictionary(k => k.Key, v => v.Select(s => new TicketDTO(s.EventId, s.EventName, s.PerformanceId, s.PerformanceDate, s.PriceId, s.Amount, s.Id, s.Row, s.Number)).ToList());
+            foreach (var ticketsGroup in groupedTickets)
+            {
+                foreach (var lineItem in lineItems)
+                {
+                    var tickets = ticketsGroup.Value;
+                    var priceBandTickets = lineItem.MatchingTickets(tickets);
+                    if (priceBandTickets.Count == 0)
+                    {
+                        var newItem = tickets.ToLineItem();
+                        updatedItems.Add(newItem);
+                    }
+                    else
+                    {
+                        var existingItem = updatedItems.First(f => f.Id == lineItem.Id);
+                        existingItem.Quantity = lineItem.Quantity + priceBandTickets.Count;
+                    }
+                }
+            }
+
             var updateOptions = new SessionUpdateOptions
             {
                 LineItems = updatedItems

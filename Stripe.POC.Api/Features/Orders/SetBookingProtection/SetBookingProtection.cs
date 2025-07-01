@@ -1,6 +1,8 @@
 using FastEndpoints;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
+using POC.Api.Common;
+using POC.Api.DTOs;
 using POC.Api.Features.Inventory.Seed;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
@@ -15,6 +17,8 @@ public static class SetBookingProtection
 
     public class Endpoint(AppDbContext dbContext) : Endpoint<Request, EmptyResponse>
     {
+        private readonly long _bookingProtectionPerformanceId = Seed.BookingProtection.Performances.First().Id;
+
         public override void Configure()
         {
             Post("/{basketId}/set-booking-protection");
@@ -63,7 +67,7 @@ public static class SetBookingProtection
             else
             {
                 var hasBookingProtection = await dbContext.Seats
-                    .Where(s => s.OrderItemId != null && s.OrderItem!.OrderId == orderId && s.PerformanceId == Seed.BookingProtectionPerformanceId)
+                    .Where(s => s.OrderItemId != null && s.OrderItem!.OrderId == orderId && s.PerformanceId == Seed.BookingProtection.Performances.First().Id)
                     .AnyAsync(ct);
                 if (hasBookingProtection)
                 {
@@ -95,7 +99,7 @@ public static class SetBookingProtection
             var lineItems = await service.LineItems.ListAsync(sessionId, cancellationToken: ct);
             var updatedItems = hasBookingProtection
                 ? await AddProtection(lineItems, ct)
-                : await RemoveProtection(lineItems, ct);
+                : RemoveProtection(lineItems);
 
             await service.UpdateAsync(sessionId, new SessionUpdateOptions { LineItems = updatedItems }, cancellationToken: ct);
         }
@@ -103,18 +107,7 @@ public static class SetBookingProtection
         private async Task<List<SessionLineItemOptions>> AddProtection(StripeList<LineItem> lineItems, CancellationToken ct)
         {
             var updatedItems = lineItems.Select(s => new SessionLineItemOptions { Id = s.Id, Quantity = s.Quantity }).ToList();
-            //TODO when metadata are present
-            // var existingProtection = lineItems.Data
-            //     .FirstOrDefault(f => f.Metadata.TryGetValue("performanceId", out var performanceId) && performanceId == Seed.BookingProtectionPerformanceId.ToString());
-
-            var price = await dbContext.Prices
-                .Where(p => p.Id == Seed.BookingProtectionPriceId)
-                .Select(s => s.Amount)
-                .FirstOrDefaultAsync(ct);
-
-            var unitPrice = (long)(price * 100);
-            var existingProtection = lineItems.Data
-                .FirstOrDefault(f => f.Price.UnitAmount == unitPrice);
+            var existingProtection = lineItems.FindLineItem(_bookingProtectionPerformanceId, Seed.BookingProtectionPriceId);
             if (existingProtection != null)
             {
                 var item = updatedItems.First(f => f.Id == existingProtection.Id);
@@ -122,44 +115,24 @@ public static class SetBookingProtection
             }
             else
             {
-                updatedItems.Add(new SessionLineItemOptions
-                {
-                    PriceData = new SessionLineItemPriceDataOptions
-                    {
-                        ProductData = new SessionLineItemPriceDataProductDataOptions
-                        {
-                            Name = "Booking Protection",
-                            Description = "Protect your booking against cancellations and changes."
-                        },
-                        Currency = "gbp",
-                        UnitAmount = (long)price * 100,
-                    },
-                    Quantity = 1,
-                    Metadata = new Dictionary<string, string>
-                    {
-                        { "performanceId", Seed.BookingProtectionPerformanceId.ToString() }
-                    }
-                });
+                var price = await dbContext.Prices
+                    .Where(p => p.Id == Seed.BookingProtectionPriceId)
+                    .Select(s => s.Amount)
+                    .FirstOrDefaultAsync(ct);
+
+                var ticket = new TicketDTO(Seed.BookingProtection.Id, Seed.BookingProtection.Name, _bookingProtectionPerformanceId,
+                    Seed.BookingProtection.Performances.First().PerformanceDate, Seed.BookingProtectionPriceId, price, 0, Seed.BookingProtection.Name, 0);
+                var item = new[] { ticket }.ToLineItem();
+                updatedItems.Add(item);
             }
 
             return updatedItems;
         }
 
-        private async Task<List<SessionLineItemOptions>> RemoveProtection(StripeList<LineItem> lineItems, CancellationToken ct)
+        private List<SessionLineItemOptions> RemoveProtection(StripeList<LineItem> lineItems)
         {
             var updatedItems = lineItems.Select(s => new SessionLineItemOptions { Id = s.Id, Quantity = s.Quantity }).ToList();
-            //TODO when metadata are present
-            // var existingProtection = lineItems.Data
-            //     .FirstOrDefault(f => f.Metadata.TryGetValue("performanceId", out var performanceId) && performanceId == Seed.BookingProtectionPerformanceId.ToString());
-
-            var price = await dbContext.Prices
-                .Where(p => p.Id == Seed.BookingProtectionPriceId)
-                .Select(s => s.Amount)
-                .FirstOrDefaultAsync(ct);
-
-            var unitPrice = (long)(price * 100);
-            var existingProtection = lineItems.Data
-                .FirstOrDefault(f => f.Price.UnitAmount == unitPrice);
+            var existingProtection = lineItems.FindLineItem(_bookingProtectionPerformanceId, Seed.BookingProtectionPriceId);
             if (existingProtection != null)
             {
                 var item = updatedItems.First(f => f.Id == existingProtection.Id);
@@ -188,7 +161,7 @@ public static class SetBookingProtection
                         Row = "BookingProtection",
                         Number = 0,
                         PriceId = Seed.BookingProtectionPriceId,
-                        PerformanceId = Seed.BookingProtectionPerformanceId
+                        PerformanceId = _bookingProtectionPerformanceId
                     }
                 ]
             };
@@ -199,7 +172,7 @@ public static class SetBookingProtection
         private async Task RemoveBookingProtection(long orderId, CancellationToken ct)
         {
             await dbContext.Seats
-                .Where(s => s.OrderItemId != null && s.OrderItem!.OrderId == orderId && s.PerformanceId == Seed.BookingProtectionPerformanceId)
+                .Where(s => s.OrderItemId != null && s.OrderItem!.OrderId == orderId && s.PerformanceId == _bookingProtectionPerformanceId)
                 .ExecuteDeleteAsync(ct);
         }
     }

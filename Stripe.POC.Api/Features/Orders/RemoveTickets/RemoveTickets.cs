@@ -1,5 +1,6 @@
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using POC.Api.Common;
 using POC.Api.DTOs;
 using POC.Api.Features.Orders.Shared;
 using POC.Api.Persistence;
@@ -93,52 +94,43 @@ public static class RemoveTickets
             {
                 var service = new SessionService();
                 var lineItems = await service.LineItems.ListAsync(sessionId, cancellationToken: cancellationToken);
-                var remainingItems = new Dictionary<string, long?>();
+                var updatedItems = lineItems.Select(s => new SessionLineItemOptions
+                {
+                    Id = s.Id,
+                    Quantity = s.Quantity
+                }).ToList();
                 foreach (var lineItem in lineItems)
                 {
-                    // if (!lineItem.Metadata.TryGetValue("eventId", out var eventId) ||
-                    //     !lineItem.Metadata.TryGetValue("performanceId", out var performanceId) ||
-                    //     !lineItem.Metadata.TryGetValue("priceId", out var priceId))
-                    // {
-                    //     // Skip this item, will remain
-                    //     remainingItems[lineItem.Id] = lineItem.Quantity;
-                    //     continue;
-                    // }
-                    //
-                    // var priceBandTickets = tickets.Where(w => w.EventId.ToString() == eventId &&
-                    //                                           w.PerformanceId.ToString() == performanceId &&
-                    //                                           w.PriceId.ToString() == priceId).ToList();
+                    var priceBandTickets = lineItem.MatchingTickets(tickets);
 
-                    //PSEUDO MAP: Not ensured mapped only by price band
-                    var lineItemPrice = lineItem.Price.UnitAmount / 100m;
-                    var priceBandTickets = tickets
-                        .Where(w => w.Price == lineItemPrice)
-                        .ToList();
-                    //END PSEUDO MAP
                     if (priceBandTickets.Count == 0)
                     {
                         // No tickets to remove for this price band, keep the item
-                        remainingItems[lineItem.Id] = lineItem.Quantity;
                         continue;
                     }
 
+                    var existingItem = updatedItems.First(f => f.Id == lineItem.Id);
                     var newQuantity = lineItem.Quantity - priceBandTickets.Count;
-
-                    remainingItems[lineItem.Id] = newQuantity;
+                    if (newQuantity > 0)
+                    {
+                        existingItem.Quantity = newQuantity;
+                    }
+                    else
+                    {
+                        updatedItems.Remove(existingItem);
+                    }
+                    
+                    tickets.RemoveAll(r => priceBandTickets.Any(a => a.SeatId == r.SeatId));
                 }
 
-                if (remainingItems.Count(w => w.Value > 0) == 0)
+                if (updatedItems.Count == 0)
                 {
                     return new Response(UpdateStatus.Emptied);
                 }
 
                 var updateOptions = new SessionUpdateOptions
                 {
-                    LineItems = remainingItems.Where(w => w.Value > 0).Select(item => new SessionLineItemOptions
-                    {
-                        Id = item.Key,
-                        Quantity = item.Value
-                    }).ToList()
+                    LineItems = updatedItems
                 };
                 await service.UpdateAsync(sessionId, updateOptions, cancellationToken: cancellationToken);
             }

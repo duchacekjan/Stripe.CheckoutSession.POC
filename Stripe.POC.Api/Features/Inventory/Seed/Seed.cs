@@ -7,12 +7,37 @@ namespace POC.Api.Features.Inventory.Seed;
 
 public static class Seed
 {
-    public const long VoucherEventId = -1;
-    public const long BookingProtectionEventId = -2;
-    public const long VoucherPerformanceId = -1;
-    public const long BookingProtectionPerformanceId = -2;
     public const long BookingProtectionPriceId = -1;
 
+    public static readonly Event Voucher = new()
+    {
+        Id = -1,
+        Name = "Voucher",
+        Performances = new List<Performance>
+        {
+            new()
+            {
+                Id = -1,
+                PerformanceDate = DateTime.MaxValue,
+                DurationMinutes = 1
+            }
+        }
+    };
+
+    public static readonly Event BookingProtection = new()
+    {
+        Id = -2,
+        Name = "Booking Protection",
+        Performances = new List<Performance>
+        {
+            new()
+            {
+                Id = -1,
+                PerformanceDate = DateTime.MaxValue,
+                DurationMinutes = 1
+            }
+        }
+    };
     public class Endpoint(AppDbContext dbContext) : EndpointWithoutRequest<EmptyResponse>
     {
         public override void Configure()
@@ -111,34 +136,8 @@ public static class Seed
         private static IEnumerable<Event> EventsSeed()
         {
             var rnd = new Random();
-            yield return new Event
-            {
-                Id = VoucherEventId,
-                Name = "Voucher",
-                Performances = new List<Performance>
-                {
-                    new()
-                    {
-                        Id = VoucherPerformanceId,
-                        PerformanceDate = DateTime.MaxValue,
-                        DurationMinutes = 1
-                    }
-                }
-            };
-            yield return new Event
-            {
-                Id = BookingProtectionEventId,
-                Name = "Booking Protection",
-                Performances = new List<Performance>
-                {
-                    new()
-                    {
-                        Id = BookingProtectionPerformanceId,
-                        PerformanceDate = DateTime.MaxValue,
-                        DurationMinutes = 1
-                    }
-                }
-            };
+            yield return Voucher;
+            yield return BookingProtection;
             foreach (var pair in EventDictionary)
             {
                 yield return new Event
