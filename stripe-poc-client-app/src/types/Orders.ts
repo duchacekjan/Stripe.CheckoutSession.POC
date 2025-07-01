@@ -34,8 +34,15 @@ export interface SetPaidResponse {
   voucherCodes: string[];
 }
 
-export interface SetBookingProtectionRequest {
-  enableProtection: boolean;
+export interface GetPaidOrdersResponse {
+  paidOrders: PaidOrder[];
+}
+
+export interface PaidOrder {
+  orderId: number;
+  basketId: string;
+  tickets: Ticket[];
+  totalPrice: number;
 }
 
 export enum UpdateStatus {

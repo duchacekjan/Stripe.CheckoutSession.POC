@@ -83,7 +83,7 @@ const Vouchers: React.FC = () => {
       </div>
       <div style={{padding: '20px', display: 'flex', gap: '8px'}}>
         <button onClick={handleAddToCart}>Add to cart</button>
-        <button onClick={handleSeatPlan}>Seat plan</button>
+        <button onClick={handleSeatPlan}>Seat selection</button>
         <button onClick={handleBasket} disabled={!basketId}>Basket</button>
       </div>
     </div>

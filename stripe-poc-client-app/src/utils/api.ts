@@ -4,7 +4,7 @@ import {
   AddSeatsToOrderRequest,
   AddSeatsToOrderResponse,
   CreateOrderRequest,
-  CreateOrderResponse,
+  CreateOrderResponse, GetPaidOrdersResponse,
   GetTicketsResponse,
   RemoveTicketsRequest,
   RemoveTicketsResponse, SetPaidResponse
@@ -93,4 +93,9 @@ export const updatedBookingProtection = async (basketId: string, enableProtectio
     enableProtection: enableProtection
   };
   await apiClient.post<void>(`/orders/${basketId}/set-booking-protection`, request);
+}
+
+export const getPaidOrders = async (): Promise<GetPaidOrdersResponse> => {
+  const response = await apiClient.get<GetPaidOrdersResponse>('/orders/paid');
+  return response.data;
 }

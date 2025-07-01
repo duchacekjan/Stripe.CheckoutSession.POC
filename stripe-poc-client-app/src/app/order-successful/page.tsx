@@ -5,6 +5,7 @@ import {useEffect, useState} from "react";
 import {checkoutSessionStatus, setPaid} from "@/utils/api";
 import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
 import VouchersSummary from "@/app/order-successful/Components/VouchersSummary";
+import Actions from "@/app/order-successful/Components/Actions";
 
 const OrderSuccessful: React.FC = () => {
   const router = useRouter();
@@ -47,6 +48,10 @@ const OrderSuccessful: React.FC = () => {
     router.push('/'); // or any other page
   };
 
+  const redirectTo = (target: string) => {
+    router.push(target); // or any other page
+  };
+
   useEffect(() => {
     // Handle payment success/failure logic
 
@@ -67,9 +72,7 @@ const OrderSuccessful: React.FC = () => {
 
               If you have any questions, please email <a href="mailto:orders@example.com">orders@example.com</a>.
             </p>
-            <button onClick={redirectToSeatPlan} style={{marginTop: '8px'}}>
-              Continue Shopping
-            </button>
+            <Actions redirectTo={redirectTo}/>
           </div>
           {vouchers.length > 0 && (
             <div>
@@ -91,9 +94,7 @@ const OrderSuccessful: React.FC = () => {
           If you have any questions, please email <a href="mailto:orders@example.com">orders@example.com</a>. <br/>
           {errorMessage && <span>Error: {errorMessage}</span>}
         </p>
-        <button onClick={redirectToSeatPlan} style={{marginTop: '8px'}}>
-          Continue Shopping
-        </button>
+        <Actions redirectTo={redirectTo}/>
       </div>
 
     </div>

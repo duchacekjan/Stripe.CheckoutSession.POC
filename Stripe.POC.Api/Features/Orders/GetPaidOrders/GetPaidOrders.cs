@@ -14,7 +14,7 @@ public static class GetPaidOrders
     {
         public override void Configure()
         {
-            Get("/paid-orders");
+            Get("/paid");
             Group<OrdersGroup>();
             Description(d => d
                 .Produces<Response>()
