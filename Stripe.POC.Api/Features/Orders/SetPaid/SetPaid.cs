@@ -15,7 +15,7 @@ public static class SetPaid
     {
         public override void Configure()
         {
-            Post("/{basketId}/set-paid");
+            Post("/{BasketId}/set-paid");
             Group<OrdersGroup>();
             Description(d => d
                 .Produces<Response>()
@@ -47,7 +47,7 @@ public static class SetPaid
             var vouchers = await dbContext.Seats
                 .Where(w => w.PerformanceId == -1)
                 .Where(s => s.OrderItemId != null && s.OrderItem!.Order.BasketId == req.BasketId)
-                .Select(s => s.Row)
+                .Select(s=>s.Row)
                 .ToListAsync(ct);
             await SendOkAsync(new Response(vouchers), ct);
         }

@@ -25,10 +25,10 @@ const OrderSuccessful: React.FC = () => {
         .then((response) => {
           setStatus(response.status);
           setCustomerEmail(response.email ?? '');
-          if (response.status === 'complete') {
-            const basketId = getCurrentBasketId()!;
+          console.log("Checkout session status:", response.status);
+          if (response.status === 'complete' && response.basketId) {
             setCurrentBasketId(null);
-            setPaid(basketId)
+            setPaid(response.basketId)
               .then(response => {
                 setVouchers(response.voucherCodes);
               })

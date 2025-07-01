@@ -18,7 +18,8 @@ public enum OrderStatus
 {
     Created,
     Paid,
-    Cancelled
+    Cancelled,
+    Refunded
 }
 
 public class OrderEntityConfiguration : IEntityTypeConfiguration<Order>

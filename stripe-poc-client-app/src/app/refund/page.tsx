@@ -2,17 +2,27 @@
 
 import {useEffect, useState} from "react";
 import {PaidOrder, Ticket} from "@/types/Orders";
-import {getPaidOrders} from "@/utils/api";
+import {getPaidOrders, refundOrder} from "@/utils/api";
+import {useRouter} from "next/navigation";
 
 const RefundPage: React.FC = () => {
+  const router = useRouter();
   const [paidOrders, setPaidOrders] = useState<PaidOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<PaidOrder | null>(null);
   const [selectedTickets, setSelectedTickets] = useState<Ticket[]>([]);
   const [selectedTicketsValues, setSelectedTicketsValues] = useState<string[]>([]);
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const status = urlParams.get('status');
+    if (status) {
+      setStatus(status);
+      return;
+    }
     setIsLoading(true);
     getPaidOrders()
       .then((response) => {
@@ -25,6 +35,12 @@ const RefundPage: React.FC = () => {
         setIsLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (status === 'refunded') {
+      router.push('/');
+    }
+  }, [status]);
 
   const handleReload = () => {
     setError(null);
@@ -49,6 +65,27 @@ const RefundPage: React.FC = () => {
     setSelectedTicketsValues(newSelectedTickets.map(value => value.seatId.toString()));
   };
 
+  const handleRefund = async () => {
+    setIsLoading(true);
+    try {
+      const basketId = selectedOrder!.basketId;
+      const refundedAmount = selectedTickets.reduce((total, ticket) => total + ticket.price, 0);
+      await refundOrder(basketId, refundedAmount);
+      setIsLoading(false);
+      router.push('/refund?status=refunded');
+    } catch (error) {
+      setError((error as any).toString());
+      setIsLoading(false);
+    }
+  }
+  
+  const handleRedirect = () => {
+    router.push('/'); // Redirect to seat selection or any other page
+  }
+
+  if (status === 'refunded') {
+    return null;
+  }
 
   return (
     <div style={{minHeight: '100vh', backgroundColor: '#f9fafb', padding: '16px 0'}}>
@@ -147,7 +184,7 @@ const RefundPage: React.FC = () => {
           </div>
         )}
         <div style={{display: 'flex', gap: '8px', marginBottom: '8px'}}>
-          <button>
+          <button onClick={handleRedirect}>
             Seat selection
           </button>
         </div>
@@ -245,7 +282,10 @@ const RefundPage: React.FC = () => {
 
           {selectedTickets.length > 0 && (
             <div style={{display: 'flex', gap: '8px', justifyContent: 'space-between', marginTop: '8px'}}>
-              <button style={{backgroundColor: 'red'}}>
+              <button
+                style={{backgroundColor: 'red'}}
+                onClick={handleRefund}
+                disabled={!selectedOrder?.basketId || selectedTickets.length === 0}>
                 Refund £{selectedTickets.reduce((total, ticket) => total + ticket.price, 0).toFixed(2)}
               </button>
             </div>

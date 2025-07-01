@@ -38,6 +38,10 @@ export interface GetPaidOrdersResponse {
   paidOrders: PaidOrder[];
 }
 
+export interface RefundRequest {
+  refundedAmount: number;
+}
+
 export interface PaidOrder {
   orderId: number;
   basketId: string;

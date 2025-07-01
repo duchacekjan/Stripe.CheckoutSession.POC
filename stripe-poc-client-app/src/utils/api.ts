@@ -12,7 +12,6 @@ import {
 import {
   CheckoutSessionCreateRequest,
   CheckoutSessionCreateResponse,
-  CheckoutSessionStatusRequest,
   CheckoutSessionStatusResponse
 } from "@/types/CheckoutSession";
 import {BuyVoucherResponse} from "@/types/Vouchers";
@@ -26,10 +25,7 @@ export const createCheckoutSession = async (basketId: string): Promise<CheckoutS
 }
 
 export const checkoutSessionStatus = async (sessionId: string): Promise<CheckoutSessionStatusResponse> => {
-  const request: CheckoutSessionStatusRequest = {
-    sessionId: sessionId,
-  }
-  const response = await apiClient.post<CheckoutSessionStatusResponse>('/stripe/checkout-session/status', request);
+  const response = await apiClient.get<CheckoutSessionStatusResponse>(`/stripe/checkout-session/${sessionId}/status`);
   return response.data;
 }
 
@@ -84,7 +80,7 @@ export const buyVoucher = async (price: number, basketId?: string): Promise<BuyV
 }
 
 export const setPaid = async (basketId: string): Promise<SetPaidResponse> => {
-  const response = await apiClient.post<SetPaidResponse>(`/orders/${basketId}/set-paid`);
+  const response = await apiClient.post<SetPaidResponse>(`/orders/${basketId}/set-paid`, null);
   return response.data;
 }
 
@@ -98,4 +94,11 @@ export const updatedBookingProtection = async (basketId: string, enableProtectio
 export const getPaidOrders = async (): Promise<GetPaidOrdersResponse> => {
   const response = await apiClient.get<GetPaidOrdersResponse>('/orders/paid');
   return response.data;
+}
+
+export const refundOrder = async (basketId: string, refundedAmount: number): Promise<void> => {
+  const request = {
+    refundedAmount: refundedAmount
+  };
+  await apiClient.post<void>(`/orders/${basketId}/refund`, request);
 }
