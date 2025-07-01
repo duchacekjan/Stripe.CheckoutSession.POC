@@ -60,7 +60,7 @@ const CustomerElements: React.FC<CustomerElementsProps> = ({
         padding: '8px',
         marginBottom: '8px'
       }}>
-        <h4>Customer info</h4>
+        <h4>Customer section</h4>
         <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
           <label htmlFor={email}> Email </label>
           <input
