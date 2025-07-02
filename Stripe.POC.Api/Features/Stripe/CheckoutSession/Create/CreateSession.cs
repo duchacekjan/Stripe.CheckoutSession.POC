@@ -25,8 +25,8 @@ public static class CreateSession
             Post("/create");
             Group<CheckoutSessionGroup>();
             Description(d => d
-                .Produces<Response>()
-                .Produces<string>(StatusCodes.Status201Created)
+                .Produces<Response>(StatusCodes.Status201Created)
+                .Produces<string>(StatusCodes.Status404NotFound)
                 .WithName($"{nameof(CheckoutSession)}.{nameof(CreateSession)}")
             );
             Summary(s =>
@@ -60,28 +60,21 @@ public static class CreateSession
         {
             var lineItems = CreateLineItems(tickets);
             var (sessionId, clientSecret) = await CreateCheckoutSessionAsync(basketId, lineItems, ct);
-            await SaveCheckoutSessionAsync(basketId, sessionId, ct);
+            await SaveCheckoutSessionAsync(basketId, sessionId, clientSecret, ct);
             return new Response(clientSecret);
         }
 
         private async Task<Response?> GetStoredSessionAsync(Guid basketId, CancellationToken ct)
         {
-            var storedSessionId = await dbContext.CheckoutSessions
+            var clientSecret = await dbContext.CheckoutSessions
                 .Where(w => w.Order.BasketId == basketId)
-                .Select(s => s.SessionId)
+                .Select(s => s.ClientSecret)
                 .FirstOrDefaultAsync(ct);
 
-            if (string.IsNullOrEmpty(storedSessionId))
-            {
-                return null;
-            }
-
-            var sessionClientSecret = await GetClientSecretAsync(storedSessionId, ct);
-            return
-                new Response(sessionClientSecret);
+            return string.IsNullOrEmpty(clientSecret) ? null : new Response(clientSecret);
         }
 
-        private async Task SaveCheckoutSessionAsync(Guid basketId, string sessionId, CancellationToken ct)
+        private async Task SaveCheckoutSessionAsync(Guid basketId, string sessionId, string clientSecret, CancellationToken ct)
         {
             var order = await dbContext.Orders.FirstOrDefaultAsync(f => f.BasketId == basketId, ct);
 
@@ -93,16 +86,10 @@ public static class CreateSession
             order.CheckoutSession = new Persistence.Entities.CheckoutSession
             {
                 SessionId = sessionId,
+                ClientSecret = clientSecret,
                 OrderId = order.Id
             };
             await dbContext.SaveChangesAsync(ct);
-        }
-
-        private static async Task<string> GetClientSecretAsync(string sessionId, CancellationToken ct)
-        {
-            var sessionService = new SessionService();
-            var session = await sessionService.GetAsync(sessionId, cancellationToken: ct);
-            return session.ClientSecret;
         }
 
         private static List<SessionLineItemOptions> CreateLineItems(List<TicketDTO> tickets)

@@ -13,7 +13,7 @@ const RefundPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<PaidOrder | null>(null);
   const [selectedTickets, setSelectedTickets] = useState<Ticket[]>([]);
   const [selectedTicketsValues, setSelectedTicketsValues] = useState<string[]>([]);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>('refunded');
 
   useEffect(() => {
     setIsLoading(true);
@@ -24,7 +24,7 @@ const RefundPage: React.FC = () => {
       })
       .catch((error) => {
         console.error("Error fetching paid orders:", error);
-        // Handle error, maybe redirect or show a message
+        setError(`Error fetching paid orders:${(error as any).toString()}`);
         setIsLoading(false);
       });
   }, []);
@@ -37,7 +37,8 @@ const RefundPage: React.FC = () => {
   const handleOrderChange = (orderId: string) => {
     if (orderId === '') {
       setSelectedOrder(null);
-
+      setSelectedTickets([]);
+      setSelectedTicketsValues([]);
       return;
     }
 
@@ -61,25 +62,13 @@ const RefundPage: React.FC = () => {
       setIsLoading(false);
       setStatus('refunded');
     } catch (error) {
-      setError((error as any).toString());
+      setError(`Error executing refund:${(error as any).toString()}`);
       setIsLoading(false);
     }
   }
   
   const handleRedirect = () => {
     router.push('/'); // Redirect to seat selection or any other page
-  }
-
-  if (status === 'refunded') {
-    return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h1 style={{textAlign: 'center', marginTop: '20px'}}>Refund Successful</h1>
-        <button
-          onClick={handleRedirect}>
-          Seat selection
-        </button>
-      </div>
-    );
   }
 
   return (
@@ -123,6 +112,41 @@ const RefundPage: React.FC = () => {
               fontWeight: '500'
             }}>
               Loading...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* status Overlay */}
+      {status === 'refunded' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+          }}>
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <h2 style={{textAlign: 'center', marginBottom: '8px'}}>Refund Successful</h2>
+              <button
+                onClick={handleRedirect}>
+                Seat selection
+              </button>
             </div>
           </div>
         </div>

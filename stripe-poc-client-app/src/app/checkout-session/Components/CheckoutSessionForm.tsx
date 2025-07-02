@@ -22,7 +22,7 @@ const validateEmail = async (email: string, checkout: CheckoutContextValue) => {
 
 const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasPerformance, bookingProtection, setBookingProtection}) => {
   const router = useRouter();
-  const [email, setEmail] = useState<string>('');
+  const [email, setEmail] = useState<string>('jan.duchacek@itixo.com');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);

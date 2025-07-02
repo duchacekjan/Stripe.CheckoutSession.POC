@@ -36,6 +36,7 @@ const CheckoutSessionPage: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await createCheckoutSession(basketId!);
+      console.log("Checkout session created with client secret:", response.clientSecret);
       setIsLoading(false)
       return response.clientSecret;
     } catch (error) {

@@ -8,6 +8,7 @@ namespace POC.Api.Persistence.Entities;
 public class CheckoutSession : Entity
 {
     public string SessionId { get; set; } = string.Empty;
+    public string ClientSecret { get; set; } = string.Empty;
     public long OrderId { get; set; }
     public Order Order { get; set; } = null!;
 }
@@ -18,6 +19,9 @@ public class CheckoutSessionEntityConfiguration : IEntityTypeConfiguration<Check
     {
         builder.HasKey(k => k.Id);
         builder.Property(p => p.SessionId)
+            .IsRequired()
+            .HasMaxLength(255);
+        builder.Property(p => p.ClientSecret)
             .IsRequired()
             .HasMaxLength(255);
         builder.HasOne(o => o.Order)
