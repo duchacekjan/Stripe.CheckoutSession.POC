@@ -12,7 +12,7 @@ namespace POC.Api.Features.Orders.RemoveTickets;
 
 public static class RemoveTickets
 {
-    public record Request(Guid BasketId, string SessionId, List<long> SeatIds);
+    public record Request(Guid BasketId, List<long> SeatIds);
 
     public record Response(UpdateStatus Status, string? Message = null);
 
@@ -55,7 +55,7 @@ public static class RemoveTickets
                 .ToList();
 
             await RemoveTicketsFromOrder(ticketsToRemove, ct);
-            var response = await RemoveTicketsFromSession(req.SessionId, ticketsToRemove, ct);
+            var response = await RemoveTicketsFromSession(req.BasketId, ticketsToRemove, ct);
             switch (response.Status)
             {
                 case UpdateStatus.Emptied:
@@ -88,8 +88,12 @@ public static class RemoveTickets
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        private async Task<Response> RemoveTicketsFromSession(string sessionId, List<TicketDTO> tickets, CancellationToken cancellationToken)
+        private async Task<Response> RemoveTicketsFromSession(Guid basketId, List<TicketDTO> tickets, CancellationToken cancellationToken)
         {
+            var sessionId = await dbContext.CheckoutSessions
+                .Where(w => w.Order.BasketId == basketId)
+                .Select(s => s.SessionId)
+                .FirstAsync(cancellationToken);
             try
             {
                 var service = new SessionService();

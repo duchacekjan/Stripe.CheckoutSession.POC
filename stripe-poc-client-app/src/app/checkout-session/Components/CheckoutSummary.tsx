@@ -2,11 +2,11 @@
 
 import React, {useEffect, useState} from "react";
 import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
-import {getOrderTickets, removeOrderTickets} from "@/utils/api";
 import {Ticket, UpdateStatus} from "@/types/Orders";
 import GroupedTicket from "@/app/checkout-session/Components/GroupedTicket";
 import {useCheckout} from "@stripe/react-stripe-js";
 import {useRouter} from "next/navigation";
+import {useApi} from "@/utils/api";
 
 interface CheckoutSummaryProps {
   setHasPerformance: (hasPerformance: boolean) => void;
@@ -17,6 +17,7 @@ interface CheckoutSummaryProps {
 const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, bookingProtection, setBookingProtection}) => {
   const checkout = useCheckout();
   const router = useRouter();
+  const api = useApi();
   const [basketId, setBasketId] = useState<string | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
@@ -24,11 +25,11 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
     const currentBasketId = getCurrentBasketId();
     if (currentBasketId) {
       setBasketId(currentBasketId);
-      getOrderTickets(currentBasketId)
+      api.orders.getTickets(currentBasketId)
         .then(response => {
-          setTickets(response.tickets);
-          setHasPerformance(response.tickets.some(ticket => ticket.performanceId > 0));
-          setBookingProtection(response.tickets.some(ticket => ticket.performanceId === -2));
+          setTickets(response);
+          setHasPerformance(response.some(ticket => ticket.performanceId > 0));
+          setBookingProtection(response.some(ticket => ticket.performanceId === -2));
         })
         .catch(error => {
           console.error("Error fetching tickets:", error);
@@ -49,7 +50,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
   }, {} as Record<string, Ticket[]>);
 
   const updateCheckout = async (ticketsToRemove: number[]) => {
-    const response = await removeOrderTickets(basketId!, checkout.id, ticketsToRemove);
+    const response = await api.orders.removeTickets(basketId!, ticketsToRemove);
     if (response.status === UpdateStatus.Emptied) {
       setCurrentBasketId(null);
       router.push('/');
@@ -66,8 +67,8 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
         return;
       }
 
-      const ticketsResponse = await getOrderTickets(basketId!)
-      setTickets(ticketsResponse.tickets);
+      const ticketsResponse = await api.orders.getTickets(basketId!)
+      setTickets(ticketsResponse);
     } catch (error) {
       console.error("Error updating tickets:", error);
     }

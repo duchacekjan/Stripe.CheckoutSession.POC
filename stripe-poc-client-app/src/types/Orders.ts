@@ -21,7 +21,6 @@ export interface GetTicketsResponse {
 }
 
 export interface RemoveTicketsRequest {
-  sessionId: string;
   seatIds: number[];
 }
 

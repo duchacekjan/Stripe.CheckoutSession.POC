@@ -1,13 +1,13 @@
 "use client";
 
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Appearance, loadStripe} from '@stripe/stripe-js';
 import {CheckoutProvider} from '@stripe/react-stripe-js';
-import {checkoutSessionStatus, createCheckoutSession} from "@/utils/api";
 import CheckoutSessionForm from "@/app/checkout-session/Components/CheckoutSessionForm";
 import {getCurrentBasketId} from "@/utils/basketIdProvider";
 import {useRouter} from "next/navigation";
 import CheckoutSummary from "@/app/checkout-session/Components/CheckoutSummary";
+import {useApi} from "@/utils/api";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || '', {
   betas: ['custom_checkout_server_updates_1', 'custom_checkout_adaptive_pricing_2'],
@@ -22,6 +22,7 @@ const CheckoutSessionPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isOpened, setIsOpened] = useState<boolean>(false);
   const router = useRouter();
+  const api = useApi();
 
   useEffect(() => {
     const currentBasketId = getCurrentBasketId();
@@ -39,7 +40,7 @@ const CheckoutSessionPage: React.FC = () => {
       return;
     }
     console.log("Fetching checkout session status for session ID:", sessionId);
-    checkoutSessionStatus(sessionId)
+    api.checkoutSessions.status(sessionId)
       .then((response) => {
         console.log("Checkout session status response:", response.status);
         if (response.status === 'open') {
@@ -59,7 +60,7 @@ const CheckoutSessionPage: React.FC = () => {
   const fetchClientSecret = async () => {
     setIsLoading(true);
     try {
-      const response = await createCheckoutSession(basketId!);
+      const response = await api.checkoutSessions.create(basketId!);
       console.log("Checkout session created with response:", response);
       setSessionId(response.sessionId);
       return response.clientSecret;

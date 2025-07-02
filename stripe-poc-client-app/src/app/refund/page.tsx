@@ -2,11 +2,12 @@
 
 import {useEffect, useState} from "react";
 import {PaidOrder, Ticket} from "@/types/Orders";
-import {getPaidOrders, refundOrder} from "@/utils/api";
 import {useRouter} from "next/navigation";
+import {useApi} from "@/utils/api";
 
 const RefundPage: React.FC = () => {
   const router = useRouter();
+  const api = useApi();
   const [paidOrders, setPaidOrders] = useState<PaidOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,9 +18,9 @@ const RefundPage: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    getPaidOrders()
+    api.orders.getPaidOrders()
       .then((response) => {
-        setPaidOrders(response.paidOrders)
+        setPaidOrders(response)
         setIsLoading(false);
       })
       .catch((error) => {
@@ -58,7 +59,7 @@ const RefundPage: React.FC = () => {
     try {
       const basketId = selectedOrder!.basketId;
       const refundedAmount = selectedTickets.reduce((total, ticket) => total + ticket.price, 0);
-      await refundOrder(basketId, refundedAmount);
+      await api.orders.refund(basketId, refundedAmount);
       setIsLoading(false);
       setStatus('refunded');
     } catch (error) {

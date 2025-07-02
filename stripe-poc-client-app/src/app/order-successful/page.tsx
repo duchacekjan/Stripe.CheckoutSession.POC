@@ -2,13 +2,14 @@
 
 import {useRouter} from "next/navigation";
 import {useEffect, useState} from "react";
-import {checkoutSessionStatus, setPaid} from "@/utils/api";
-import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
+import {setCurrentBasketId} from "@/utils/basketIdProvider";
 import VouchersSummary from "@/app/order-successful/Components/VouchersSummary";
 import Actions from "@/app/order-successful/Components/Actions";
+import {useApi} from "@/utils/api";
 
 const OrderSuccessful: React.FC = () => {
   const router = useRouter();
+  const api = useApi();
 
   const [status, setStatus] = useState<string | null>(null);
   const [customerEmail, setCustomerEmail] = useState<string>('');
@@ -21,16 +22,16 @@ const OrderSuccessful: React.FC = () => {
     const sessionId = urlParams.get('session_id');
 
     if (sessionId) {
-      checkoutSessionStatus(sessionId)
+      api.checkoutSessions.status(sessionId)
         .then((response) => {
           setStatus(response.status);
           setCustomerEmail(response.email ?? '');
           console.log("Checkout session status:", response.status);
           if (response.status === 'complete' && response.basketId) {
             setCurrentBasketId(null);
-            setPaid(response.basketId)
-              .then(response => {
-                setVouchers(response.voucherCodes);
+            api.orders.setPaid(response.basketId)
+              .then(voucherCodes => {
+                setVouchers(voucherCodes);
               })
               .catch(error => {
                 console.log(error);

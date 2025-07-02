@@ -1,11 +1,12 @@
 "use client";
 import {useEffect, useState} from 'react';
 import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
-import {buyVoucher} from "@/utils/api";
 import {useRouter} from "next/navigation";
+import {useApi} from "@/utils/api";
 
 const Vouchers: React.FC = () => {
   const router = useRouter();
+  const api = useApi();
   const [voucherValue, setVoucherValue] = useState<number>(160);
   const [basketId, setBasketId] = useState<string | null>(null);
 
@@ -21,8 +22,8 @@ const Vouchers: React.FC = () => {
 
   const handleAddToCart = async () => {
     try {
-      const response = await buyVoucher(voucherValue, basketId ?? undefined);
-      setCurrentBasketId(response.basketId);
+      const responseBasketId = await api.orders.buyVoucher(voucherValue, basketId ?? undefined);
+      setCurrentBasketId(responseBasketId);
       router.push('/checkout-session');
     } catch (error) {
       console.error("Error adding voucher to cart:", error);

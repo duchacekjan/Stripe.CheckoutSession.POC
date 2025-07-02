@@ -4,7 +4,7 @@ import {CheckoutContextValue, CurrencySelectorElement, PaymentElement, useChecko
 import {useRouter} from "next/navigation";
 import {useState} from "react";
 import CustomerElements from "@/app/checkout-session/Components/CustomerElements";
-import {updatedBookingProtection} from "@/utils/api";
+import {useApi} from "@/utils/api";
 
 interface CheckoutSessionFormProps {
   basketId: string;
@@ -22,6 +22,7 @@ const validateEmail = async (email: string, checkout: CheckoutContextValue) => {
 
 const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasPerformance, bookingProtection, setBookingProtection}) => {
   const router = useRouter();
+  const api = useApi();
   const [email, setEmail] = useState<string>('jan.duchacek@itixo.com');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -69,7 +70,7 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasP
 
   const handleBookingProtectionChange = async (protection: boolean) => {
     try {
-      await updatedBookingProtection(basketId, protection);
+      await api.orders.updatedBookingProtection(basketId, protection);
       setBookingProtection(protection);
     } catch (error) {
       setMessage("Failed to update booking protection. Please try again later.");
