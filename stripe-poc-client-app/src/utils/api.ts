@@ -10,17 +10,13 @@ import {
   RemoveTicketsResponse, SetPaidResponse
 } from "@/types/Orders";
 import {
-  CheckoutSessionCreateRequest,
   CheckoutSessionCreateResponse,
   CheckoutSessionStatusResponse
 } from "@/types/CheckoutSession";
 import {BuyVoucherResponse} from "@/types/Vouchers";
 
 export const createCheckoutSession = async (basketId: string): Promise<CheckoutSessionCreateResponse> => {
-  const request: CheckoutSessionCreateRequest = {
-    basketId: basketId
-  }
-  const response = await apiClient.post<CheckoutSessionCreateResponse>('/stripe/checkout-session/create', request);
+  const response = await apiClient.post<CheckoutSessionCreateResponse>(`/stripe/checkout-session/${basketId}/create`, null);
   return response.data;
 }
 

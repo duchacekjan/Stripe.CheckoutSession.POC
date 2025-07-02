@@ -22,7 +22,7 @@ public static class CreateSession
 
         public override void Configure()
         {
-            Post("/create");
+            Post("/{BasketId}/create");
             Group<CheckoutSessionGroup>();
             Description(d => d
                 .Produces<Response>(StatusCodes.Status201Created)

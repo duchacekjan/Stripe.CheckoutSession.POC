@@ -1,7 +1,3 @@
-export interface CheckoutSessionCreateRequest {
-  basketId: string;
-}
-
 export interface CheckoutSessionCreateResponse {
   clientSecret: string;
   sessionId: string;
