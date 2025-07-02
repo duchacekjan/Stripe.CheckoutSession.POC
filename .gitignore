@@ -12,4 +12,4 @@ riderModule.iml
 /nginx/
 
 /stripe-poc-client-app/certs/
-**/app.db
+**/app.db*
