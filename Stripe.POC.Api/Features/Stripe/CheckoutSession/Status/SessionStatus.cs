@@ -45,7 +45,7 @@ public static class SessionStatus
                 .Select(s => (Guid?)s.Order.BasketId)
                 .FirstOrDefaultAsync(ct);
 
-            var response = new Response(session.Status, session.CustomerDetails.Email, basketId?.ToString());
+            var response = new Response(session.Status, session.CustomerDetails?.Email, basketId?.ToString());
             await SendOkAsync(response, ct);
         }
     }

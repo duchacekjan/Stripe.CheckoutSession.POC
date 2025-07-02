@@ -13,7 +13,7 @@ public static class CreateSession
 {
     public record Request(Guid BasketId);
 
-    public record Response(string ClientSecret);
+    public record Response(string ClientSecret, string SessionId);
 
     public class Endpoint(AppDbContext dbContext, IOptions<StripeConfig> options) : Endpoint<Request, Response>
     {
@@ -61,17 +61,17 @@ public static class CreateSession
             var lineItems = CreateLineItems(tickets);
             var (sessionId, clientSecret) = await CreateCheckoutSessionAsync(basketId, lineItems, ct);
             await SaveCheckoutSessionAsync(basketId, sessionId, clientSecret, ct);
-            return new Response(clientSecret);
+            return new Response(clientSecret, sessionId);
         }
 
         private async Task<Response?> GetStoredSessionAsync(Guid basketId, CancellationToken ct)
         {
-            var clientSecret = await dbContext.CheckoutSessions
+            var data = await dbContext.CheckoutSessions
                 .Where(w => w.Order.BasketId == basketId)
-                .Select(s => s.ClientSecret)
+                .Select(s => new { s.ClientSecret, s.SessionId })
                 .FirstOrDefaultAsync(ct);
 
-            return string.IsNullOrEmpty(clientSecret) ? null : new Response(clientSecret);
+            return string.IsNullOrEmpty(data?.ClientSecret) ? null : new Response(data.ClientSecret, data.SessionId);
         }
 
         private async Task SaveCheckoutSessionAsync(Guid basketId, string sessionId, string clientSecret, CancellationToken ct)

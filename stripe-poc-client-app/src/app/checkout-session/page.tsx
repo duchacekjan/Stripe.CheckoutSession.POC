@@ -1,13 +1,11 @@
 "use client";
 
-import React, {useState, useEffect, useMemo} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {Appearance, loadStripe} from '@stripe/stripe-js';
-import {
-  CheckoutProvider
-} from '@stripe/react-stripe-js';
-import {createCheckoutSession} from "@/utils/api";
+import {CheckoutProvider} from '@stripe/react-stripe-js';
+import {checkoutSessionStatus, createCheckoutSession} from "@/utils/api";
 import CheckoutSessionForm from "@/app/checkout-session/Components/CheckoutSessionForm";
-import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
+import {getCurrentBasketId} from "@/utils/basketIdProvider";
 import {useRouter} from "next/navigation";
 import CheckoutSummary from "@/app/checkout-session/Components/CheckoutSummary";
 
@@ -20,6 +18,9 @@ const CheckoutSessionPage: React.FC = () => {
   const [hasPerformance, setHasPerformance] = useState<boolean>(false);
   const [bookingProtection, setBookingProtection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isOpened, setIsOpened] = useState<boolean>(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,88 +33,56 @@ const CheckoutSessionPage: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (!sessionId) {
+      setIsOpened(false);
+      return;
+    }
+    console.log("Fetching checkout session status for session ID:", sessionId);
+    checkoutSessionStatus(sessionId)
+      .then((response) => {
+        console.log("Checkout session status response:", response.status);
+        if (response.status === 'open') {
+          setIsOpened(true);
+          setIsLoading(false);
+        } else {
+          setIsOpened(false);
+          setIsLoading(false);
+        }
+      })
+      .catch((error) => {
+        setError(`Failed to fetch checkout session status. Please try again. ${error}`);
+        setIsOpened(false);
+      })
+  }, [sessionId]);
+
   const fetchClientSecret = async () => {
     setIsLoading(true);
     try {
       const response = await createCheckoutSession(basketId!);
-      console.log("Checkout session created with client secret:", response.clientSecret);
-      setIsLoading(false)
+      console.log("Checkout session created with response:", response);
+      setSessionId(response.sessionId);
       return response.clientSecret;
     } catch (error) {
-      console.error("Error creating checkout session:", error);
-      setCurrentBasketId(null); // Clear basket ID on error
-      router.push('/');
+      setError(`Failed to create checkout session. Please try again. ${error}`);
       setIsLoading(false);
       return Promise.reject(error);
     }
+  }
+
+  const handleReload = () => {
+    setError(null);
+    window.location.reload();
   }
 
   const appearance: Appearance = {
     theme: 'stripe',
   };
 
-  if (!stripePromise || !basketId) {
-    return (
-      <div style={{minHeight: '100vh', backgroundColor: '#f9fafb', padding: '16px 0'}}>
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '16px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
-          }}>
-            {/* Spinner */}
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid #e5e7eb',
-              borderTop: '3px solid #3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }}></div>
-            <div style={{
-              fontSize: '18px',
-              color: '#374151',
-              fontWeight: '500'
-            }}>
-              Loading...
-            </div>
-          </div>
-        </div>
-        {/* CSS for spinner animation */}
-        <style jsx>{`
-            @keyframes spin {
-                0% {
-                    transform: rotate(0deg);
-                }
-                100% {
-                    transform: rotate(360deg);
-                }
-            }
-        `}</style>
-      </div>
-    )
-  }
-
   return (
     <div style={{minHeight: '100vh', backgroundColor: '#f9fafb', padding: '16px 0'}}>
       {/* Loading Overlay */}
-      {!stripePromise || isLoading && (
+      {!basketId || !stripePromise || isLoading && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -168,9 +137,49 @@ const CheckoutSessionPage: React.FC = () => {
               }
           }
       `}</style>
-      <div style={{maxWidth: '1100px', minHeight: 'calc(100vh - 35px)', margin: '0 auto', padding: '0 8px'}}>
+
+      <div style={{maxWidth: '1100px', margin: '0 auto', padding: '0 8px'}}>
+        {/* Error Panel */}
+        {error && (
+          <div style={{
+            marginBottom: '16px',
+            padding: '16px',
+            backgroundColor: '#fef2f2',
+            borderRadius: '6px',
+            border: '1px solid #dc2626',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <div style={{
+              fontSize: '18px',
+              fontWeight: '500',
+              color: '#dc2626'
+            }}>
+              {error}
+            </div>
+            <button
+              onClick={() => handleReload()}
+              title="Reload page"
+              style={{
+                marginLeft: 'auto',
+                padding: '4px 8px',
+                backgroundColor: 'transparent',
+                border: '1px solid #dc2626',
+                borderRadius: '4px',
+                color: '#dc2626',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         <div style={{
           display: 'grid',
+          minHeight: 'calc(100vh - 35px)',
           gridTemplateColumns: '1fr 290px',
           gap: '8px',
           backgroundColor: 'white',
@@ -178,34 +187,40 @@ const CheckoutSessionPage: React.FC = () => {
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           padding: '8px'
         }}>
-          <CheckoutProvider
-            stripe={stripePromise}
-            options={{
-              fetchClientSecret: fetchClientSecret,
-              elementsOptions: {
-                appearance: appearance,
-                loader: 'auto'
-              }
-            }}
-          >
-            <div style={{width: '400px'}}>
-              <CheckoutSessionForm
-                basketId={basketId}
-                hasPerformance={hasPerformance}
-                bookingProtection={bookingProtection}
-                setBookingProtection={setBookingProtection}
-              />
-            </div>
-            <CheckoutSummary
-              setHasPerformance={setHasPerformance}
-              bookingProtection={bookingProtection}
-              setBookingProtection={setBookingProtection}/>
+          {basketId && (
+            <CheckoutProvider
+              stripe={stripePromise}
+              options={{
+                fetchClientSecret: fetchClientSecret,
+                elementsOptions: {
+                  appearance: appearance
+                }
+              }}
+            >
+              {isOpened && (
+                <>
+                  <div style={{width: '400px'}}>
+                    <CheckoutSessionForm
+                      basketId={basketId!}
+                      hasPerformance={hasPerformance}
+                      bookingProtection={bookingProtection}
+                      setBookingProtection={setBookingProtection}
+                    />
+                  </div>
+                  <CheckoutSummary
+                    setHasPerformance={setHasPerformance}
+                    bookingProtection={bookingProtection}
+                    setBookingProtection={setBookingProtection}/>
+                </>
+              )}
 
-          </CheckoutProvider>
+            </CheckoutProvider>
+          )}
         </div>
       </div>
     </div>
-  );
+  )
+    ;
 };
 
 export default CheckoutSessionPage;

@@ -25,4 +25,5 @@ export interface Seat {
   priceId: number;
   amount: number;
   isAvailable: boolean;
+  priceName: string;
 }

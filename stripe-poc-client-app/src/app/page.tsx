@@ -133,7 +133,7 @@ const SeatPlan: React.FC = () => {
 
   // Group seats by row
   const seatsByRow = seats.reduce((acc, seat) => {
-    const rowKey = `${seat.row} (£ ${seat.amount})`;
+    const rowKey = `${seat.row} (£ ${seat.amount} - ${seat.priceName})`;
     if (!acc[rowKey]) {
       acc[rowKey] = [];
     }

@@ -38,6 +38,7 @@ public static class Seed
             }
         }
     };
+
     public class Endpoint(AppDbContext dbContext) : EndpointWithoutRequest<EmptyResponse>
     {
         public override void Configure()
@@ -99,7 +100,7 @@ public static class Seed
         {
             var row = Row.Start;
             var result = new List<Seat>();
-            foreach (var price in PriceSeed.Where(w => w.Id > 0))
+            foreach (var price in PriceSeed.Where(w => w.Id > 0).OrderBy(x => Random.Shared.Next()))
             {
                 result.AddRange(GenerateRowOfSeatsForPrice(performanceId, row, price, seatsPerRow));
                 row++;
@@ -144,7 +145,7 @@ public static class Seed
                 {
                     Id = pair.Key,
                     Name = pair.Value,
-                    Performances = GeneratePerformances(pair.Key, rnd.Next(5, 20), (uint)rnd.Next(60, 180)).ToList()
+                    Performances = GeneratePerformances(pair.Key, rnd.Next(5, 20), (uint)rnd.Next(90, 180)).ToList()
                 };
             }
         }
@@ -157,7 +158,7 @@ public static class Seed
             new() { Id = 3, Name = "Balcony", Amount = 75.00m },
             new() { Id = 4, Name = "Box", Amount = 150.00m },
             new() { Id = 5, Name = "Student Discount", Amount = 30.00m },
-            new() { Id = 6, Name = "Obstructed View", Amount = 30.00m },
+            new() { Id = 6, Name = "Obstructed View", Amount = 25.00m },
         ];
 
         public class Row

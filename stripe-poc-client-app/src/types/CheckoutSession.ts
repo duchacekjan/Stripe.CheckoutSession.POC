@@ -4,6 +4,7 @@ export interface CheckoutSessionCreateRequest {
 
 export interface CheckoutSessionCreateResponse {
   clientSecret: string;
+  sessionId: string;
 }
 
 export interface CheckoutSessionStatusResponse {
