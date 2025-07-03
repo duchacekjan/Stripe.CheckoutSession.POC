@@ -126,7 +126,6 @@ public static class CreateSession
                 }
             };
 
-            //options.AddExtraParam("permissions[update_line_items]", "server_only");
             //TODO Setting permissions does not work here. It is unknown value
             //Stripe.StripeException: Received unknown parameter: permissions[update_discounts]. Did you mean update_shipping_details?
             //Tried 48.3.0-beta.1

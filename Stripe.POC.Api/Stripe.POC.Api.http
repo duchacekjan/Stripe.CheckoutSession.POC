@@ -72,3 +72,12 @@ POST {{host}}/orders/{{basketIdPaid}}/set-paid
 Accept: application/json
 Content-Type: application/json
 Authorization: {{token}}
+
+
+###
+@basketFinalize = B7EE013C-3FC1-4311-9B40-49FC28A4B2DE
+
+POST {{host}}/orders/{{basketFinalize}}/finalize
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
