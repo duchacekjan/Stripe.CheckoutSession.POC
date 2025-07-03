@@ -21,6 +21,7 @@ const CheckoutSessionPage: React.FC = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isOpened, setIsOpened] = useState<boolean>(false);
+  const [loadingQueue, setLoadingQueue] = useState<boolean[]>([]);
   const router = useRouter();
   const api = useApi();
 
@@ -85,6 +86,17 @@ const CheckoutSessionPage: React.FC = () => {
     setBookingProtection(protection)
   }
 
+  const handleLoadingQueue = (isLoading: boolean) => {
+    const newQueue = [...loadingQueue];
+    if (isLoading) {
+      newQueue.push(true);
+    } else {
+      newQueue.pop();
+    }
+    setLoadingQueue(newQueue);
+    setIsLoading(newQueue.length > 0);
+  }
+
   return (
     <div style={{minHeight: '100vh', backgroundColor: '#f9fafb', padding: '16px 0'}}>
       {/* Loading Overlay */}
@@ -97,37 +109,27 @@ const CheckoutSessionPage: React.FC = () => {
           height: '100%',
           backgroundColor: 'rgba(0, 0, 0, 0.2)',
           display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000
         }}>
+          {/* Spinner */}
           <div style={{
-            minWidth: 'calc(100vh - 32px)',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '16px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            width: '40px',
+            height: '40px',
+            border: '3px solid #e5e7eb',
+            borderTop: '3px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <div style={{
+            fontSize: '18px',
+            color: '#374151',
+            fontWeight: '500'
           }}>
-            {/* Spinner */}
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid #e5e7eb',
-              borderTop: '3px solid #3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }}></div>
-            <div style={{
-              fontSize: '18px',
-              color: '#374151',
-              fontWeight: '500'
-            }}>
-              Loading...
-            </div>
+            Loading...
           </div>
         </div>
       )}
@@ -212,12 +214,15 @@ const CheckoutSessionPage: React.FC = () => {
                       hasPerformance={hasPerformance}
                       bookingProtection={bookingProtection}
                       setBookingProtection={handleChangeBookingProtection}
+                      isLoading={isLoading}
+                      setIsLoading={handleLoadingQueue}
                     />
                   </div>
                   <CheckoutSummary
                     setHasPerformance={setHasPerformance}
                     bookingProtection={bookingProtection}
-                    setBookingProtection={handleChangeBookingProtection}/>
+                    setBookingProtection={handleChangeBookingProtection}
+                    setIsLoading={handleLoadingQueue}/>
                 </>
               )}
 

@@ -74,4 +74,8 @@ export class OrdersApi {
   async finalizeOrder(basketId: string): Promise<void> {
     await apiClient.post<void>(`/orders/${basketId}/finalize`, null);
   }
+  
+  async setPaymentFailed(basketId: string): Promise<void> {
+    await apiClient.post<void>(`/orders/${basketId}/set-payment-failed`, null);
+  }
 }

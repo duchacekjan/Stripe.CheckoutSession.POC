@@ -171,36 +171,27 @@ const SeatPlan: React.FC = () => {
           height: '100%',
           backgroundColor: 'rgba(0, 0, 0, 0.2)',
           display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000
         }}>
+          {/* Spinner */}
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '16px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            width: '40px',
+            height: '40px',
+            border: '3px solid #e5e7eb',
+            borderTop: '3px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <div style={{
+            fontSize: '18px',
+            color: '#374151',
+            fontWeight: '500'
           }}>
-            {/* Spinner */}
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid #e5e7eb',
-              borderTop: '3px solid #3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }}></div>
-            <div style={{
-              fontSize: '18px',
-              color: '#374151',
-              fontWeight: '500'
-            }}>
-              Loading...
-            </div>
+            Loading...
           </div>
         </div>
       )}

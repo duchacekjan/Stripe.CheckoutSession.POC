@@ -12,12 +12,14 @@ interface CheckoutSummaryProps {
   setHasPerformance: (hasPerformance: boolean) => void;
   bookingProtection: boolean;
   setBookingProtection: (protection: boolean) => void;
+  setIsLoading: (loading: boolean) => void;
 }
 
 const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
                                                            setHasPerformance,
                                                            bookingProtection,
-                                                           setBookingProtection
+                                                           setBookingProtection,
+                                                           setIsLoading
                                                          }) => {
   const checkout = useCheckout();
   const router = useRouter();
@@ -30,29 +32,21 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     const currentBasketId = getCurrentBasketId();
     if (currentBasketId) {
       setBasketId(currentBasketId);
+      setIsLoading(true);
       api.orders.getTickets(currentBasketId)
         .then(response => {
           handleTicketChanged(response);
         })
         .catch(error => {
+          setIsLoading(false);
           console.error("Error fetching tickets:", error);
           // Handle error, maybe redirect or show a message
         });
     } else {
       console.log("No basket ID found. Redirecting to seat plan.");
+      setIsLoading(false);
     }
   }, [bookingProtection]);
-
-  const updateCheckout = async (ticketsToRemove: number[]) => {
-    const response = await api.orders.removeTickets(basketId!, ticketsToRemove);
-    if (response.status === UpdateStatus.Emptied) {
-      setCurrentBasketId(null);
-      router.push('/');
-      response.status = UpdateStatus.Error;
-      return Promise.reject(response);
-    }
-    return response;
-  }
 
   const handleTicketChanged = (response: GetTicketsResponse) => {
     setTickets(response.tickets);
@@ -60,10 +54,12 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     const allTickets = Object.values(response.tickets).flat();
     setHasPerformance(allTickets.some(ticket => ticket.performanceId > 0));
     setBookingProtection(allTickets.some(ticket => ticket.performanceId === -2));
+    setIsLoading(false);
   }
 
   const handleRemovedTicket = async (ticketsToRemove: number[]) => {
 
+    setIsLoading(true);
     try {
       const removeTicketsResponse = await api.orders.removeTickets(basketId!, ticketsToRemove);
       if (removeTicketsResponse.status === UpdateStatus.Emptied) {
@@ -81,6 +77,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       handleTicketChanged(ticketsResponse);
     } catch (error) {
       console.error("Error updating tickets:", error);
+      setIsLoading(false);
     }
   };
 
