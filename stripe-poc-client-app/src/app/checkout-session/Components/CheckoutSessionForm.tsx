@@ -42,14 +42,6 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
   //   // Handle changes to the checkout session
   // });
 
-  const handleShopMore = () => {
-    router.push('/');
-  }
-
-  const handleBuyVoucher = () => {
-    router.push('/vouchers');
-  }
-
   const handleSubmit = async (e: any) => {
 
     e.preventDefault();
@@ -99,19 +91,10 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-        <div style={{display: 'flex', gap: '8px'}}>
-          <button style={{marginBottom: '8px'}}
-                  type={'button'}
-                  onClick={handleShopMore}>
-            Shop more
-          </button>
-          <button style={{marginBottom: '8px'}}
-                  type={'button'}
-                  onClick={handleBuyVoucher}>
-            Buy voucher
-          </button>
-        </div>
+      <div style={{
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '8px'}}>
         <CustomerElements
           email={email}
           setEmail={setEmail}
@@ -132,7 +115,6 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
         {/* Show any error or success messages */}
         {message && <div style={{color: 'red', fontSize: '11pt'}}>{message}</div>}
       </div>
-
     </form>
   );
 }

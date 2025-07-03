@@ -86,6 +86,14 @@ const CheckoutSessionPage: React.FC = () => {
     setBookingProtection(protection)
   }
 
+  const handleShopMore = () => {
+    router.push('/');
+  }
+
+  const handleBuyVoucher = () => {
+    router.push('/vouchers');
+  }
+
   const handleLoadingQueue = (isLoading: boolean) => {
     const newQueue = [...loadingQueue];
     if (isLoading) {
@@ -146,7 +154,7 @@ const CheckoutSessionPage: React.FC = () => {
           }
       `}</style>
 
-      <div style={{maxWidth: '1100px', margin: '0 auto', padding: '0 8px'}}>
+      <div style={{maxWidth: '800px', margin: '0 auto', padding: '0 8px'}}>
         {/* Error Panel */}
         {error && (
           <div style={{
@@ -187,10 +195,7 @@ const CheckoutSessionPage: React.FC = () => {
         )}
 
         <div style={{
-          display: 'grid',
-          minHeight: 'calc(100vh - 35px)',
-          gridTemplateColumns: '1fr 290px',
-          gap: '8px',
+          height: 'calc(100vh - 35px)',
           backgroundColor: 'white',
           borderRadius: '8px',
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
@@ -208,21 +213,44 @@ const CheckoutSessionPage: React.FC = () => {
             >
               {isOpened && (
                 <>
-                  <div style={{width: '400px'}}>
-                    <CheckoutSessionForm
-                      basketId={basketId!}
-                      hasPerformance={hasPerformance}
-                      bookingProtection={bookingProtection}
-                      setBookingProtection={handleChangeBookingProtection}
-                      isLoading={isLoading}
-                      setIsLoading={handleLoadingQueue}
-                    />
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div>
+                        <h2 style={{ color: '#0c4a6e'}}>Checkout</h2>
+                      </div>
+                      <div style={{display: 'flex', flexDirection: 'row-reverse', gap: '8px'}}>
+                        <div style={{display: 'flex', gap: '8px'}}>
+                          <button type={'button'}
+                                  onClick={handleShopMore}>
+                            Shop more
+                          </button>
+                          <button type={'button'}
+                                  onClick={handleBuyVoucher}>
+                            Buy voucher
+                          </button>
+                        </div>
+                      </div>  
+                    </div>                    
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 290px',
+                      gap: '8px'
+                    }}>
+                      <CheckoutSessionForm
+                        basketId={basketId!}
+                        hasPerformance={hasPerformance}
+                        bookingProtection={bookingProtection}
+                        setBookingProtection={handleChangeBookingProtection}
+                        isLoading={isLoading}
+                        setIsLoading={handleLoadingQueue}
+                      />
+                      <CheckoutSummary
+                        setHasPerformance={setHasPerformance}
+                        bookingProtection={bookingProtection}
+                        setBookingProtection={handleChangeBookingProtection}
+                        setIsLoading={handleLoadingQueue}/>
+                    </div>
                   </div>
-                  <CheckoutSummary
-                    setHasPerformance={setHasPerformance}
-                    bookingProtection={bookingProtection}
-                    setBookingProtection={handleChangeBookingProtection}
-                    setIsLoading={handleLoadingQueue}/>
                 </>
               )}
 

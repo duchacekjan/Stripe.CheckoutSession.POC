@@ -91,46 +91,48 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       flexDirection: "column",
     }}>
       <div style={{
+        padding: '8px',
+        backgroundColor: '#f0f9ff',
+        borderRadius: '6px',
+        flexGrow: 1,
+        border: '1px solid #0ea5e9',
         display: 'flex',
-        width: '280px',
+        flexDirection: 'column'
       }}>
         <div style={{
-          marginTop: '8px',
-          padding: '8px',
-          backgroundColor: '#f0f9ff',
-          borderRadius: '6px',
-          flexGrow: 1,
-          border: '1px solid #0ea5e9'
+          color: '#0c4a6e',
+          marginBottom: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+          gap: '8px',
+          height: 'calc(100vh - 150px)',
+          overflowY: 'auto'
         }}>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: '500',
-            color: '#0c4a6e',
-            marginBottom: '8px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            gap: '8px'
-          }}>
-            <h4>Basket summary</h4>
-            {Object.values(tickets).map((orderItemTickets, index) => (
-              <GroupedTicket tickets={orderItemTickets}
-                             key={`${orderItemTickets[0].performanceId}-${orderItemTickets[0].priceId}-${index}`}
-                             ticketsRemoved={removedTickets => handleRemovedTicket(removedTickets.map(s => s.seatId))}/>
-            ))}
-            <div
-              style={{display: 'flex', justifyContent: 'space-between', gap: '4px', marginTop: '8px', width: '100%'}}>
-              <div>
+          <h4>Basket summary</h4>
+          {Object.values(tickets).map((orderItemTickets, index) => (
+            <GroupedTicket tickets={orderItemTickets}
+                           key={`${orderItemTickets[0].performanceId}-${orderItemTickets[0].priceId}-${index}`}
+                           ticketsRemoved={removedTickets => handleRemovedTicket(removedTickets.map(s => s.seatId))}/>
+          ))}
+        </div>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '4px',
+          marginTop: '8px',
+          color: '#0c4a6e',
+          width: '100%'
+        }}>
+          <div>
                 <span style={{fontSize: '12pt', fontWeight: 'bold'}}>
                   Basket Total:
                 </span>
-              </div>
-              <div>
+          </div>
+          <div>
               <span style={{fontSize: '12pt', fontWeight: 'bold'}}>
                 £ {basketTotal}
               </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
