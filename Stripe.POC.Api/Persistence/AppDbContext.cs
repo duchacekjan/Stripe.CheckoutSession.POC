@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Entities.Order> Orders { get; set; } = null!;
     public DbSet<Entities.OrderItem> OrderItems { get; set; } = null!;
     
+    public DbSet<Entities.Payment> Payments { get; set; } = null!;
     
     public DbSet<Entities.CheckoutSession> CheckoutSessions { get; set; } = null!;
     

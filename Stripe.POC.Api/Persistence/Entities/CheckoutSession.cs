@@ -7,6 +7,7 @@ public class CheckoutSession : Entity
 {
     public string SessionId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;
+    public string PaymentIntentId { get; set; } = string.Empty;
     public long OrderId { get; set; }
     public Order Order { get; set; } = null!;
 }
@@ -20,6 +21,9 @@ public class CheckoutSessionEntityConfiguration : IEntityTypeConfiguration<Check
             .IsRequired()
             .HasMaxLength(255);
         builder.Property(p => p.ClientSecret)
+            .IsRequired()
+            .HasMaxLength(255);
+        builder.Property(p => p.PaymentIntentId)
             .IsRequired()
             .HasMaxLength(255);
         builder.HasOne(o => o.Order)

@@ -43,13 +43,32 @@ public static class SetPaid
 
             order.Status = OrderStatus.Paid;
             await dbContext.SaveChangesAsync(ct);
+            await UpdatePaymentAsync(req.BasketId, ct);
 
             var vouchers = await dbContext.Seats
                 .Where(w => w.PerformanceId == -1)
                 .Where(s => s.OrderItemId != null && s.OrderItem!.Order.BasketId == req.BasketId)
-                .Select(s=>s.Row)
+                .Select(s => s.Row)
                 .ToListAsync(ct);
             await SendOkAsync(new Response(vouchers), ct);
+        }
+
+        private async Task UpdatePaymentAsync(Guid basketId, CancellationToken ct)
+        {
+            var payment = await dbContext.Payments
+                .Where(p => p.Order.BasketId == basketId)
+                .Where(p => p.Status == PaymentStatus.Created)
+                .Where(p => p.UpdatedAt == null)
+                .OrderByDescending(d => d.Id)
+                .FirstOrDefaultAsync(ct);
+            if (payment == null)
+            {
+                return;
+            }
+
+            payment.Status = PaymentStatus.Succeeded;
+            payment.UpdatedAt = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync(ct);
         }
     }
 }

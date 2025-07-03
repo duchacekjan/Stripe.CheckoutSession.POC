@@ -59,9 +59,9 @@ public static class CreateSession
         private async Task<Response> CreateCheckoutSessionAsync(Guid basketId, List<TicketDTO> tickets, CancellationToken ct)
         {
             var lineItems = CreateLineItems(tickets);
-            var (sessionId, clientSecret) = await CreateCheckoutSessionAsync(basketId, lineItems, ct);
-            await SaveCheckoutSessionAsync(basketId, sessionId, clientSecret, ct);
-            return new Response(clientSecret, sessionId);
+            var session = await CreateCheckoutSessionAsync(basketId, lineItems, ct);
+            await SaveCheckoutSessionAsync(basketId, session, ct);
+            return new Response(session.ClientSecret, session.SessionId);
         }
 
         private async Task<Response?> GetStoredSessionAsync(Guid basketId, CancellationToken ct)
@@ -74,7 +74,7 @@ public static class CreateSession
             return string.IsNullOrEmpty(data?.ClientSecret) ? null : new Response(data.ClientSecret, data.SessionId);
         }
 
-        private async Task SaveCheckoutSessionAsync(Guid basketId, string sessionId, string clientSecret, CancellationToken ct)
+        private async Task SaveCheckoutSessionAsync(Guid basketId, (string SessionId, string ClientSecret, string PaymentIntentId) session, CancellationToken ct)
         {
             var order = await dbContext.Orders.FirstOrDefaultAsync(f => f.BasketId == basketId, ct);
 
@@ -85,8 +85,9 @@ public static class CreateSession
 
             order.CheckoutSession = new Persistence.Entities.CheckoutSession
             {
-                SessionId = sessionId,
-                ClientSecret = clientSecret,
+                SessionId = session.SessionId,
+                ClientSecret = session.ClientSecret,
+                PaymentIntentId = session.PaymentIntentId,
                 OrderId = order.Id
             };
             await dbContext.SaveChangesAsync(ct);
@@ -104,7 +105,7 @@ public static class CreateSession
             return items;
         }
 
-        private async Task<(string SessionId, string ClientSecret)> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
+        private async Task<(string SessionId, string ClientSecret, string PaymentIntentId)> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
         {
             var options = new SessionCreateOptions
             {
@@ -127,7 +128,7 @@ public static class CreateSession
             options.AddExtraParam("permissions[update_discounts]", "server_only");
 
             var session = await _checkoutSessionService.Value.CreateAsync(options, cancellationToken: ct);
-            return (session.Id, session.ClientSecret);
+            return (session.Id, session.ClientSecret, session.PaymentIntentId);
         }
     }
 }

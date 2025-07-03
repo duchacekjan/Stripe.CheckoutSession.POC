@@ -70,4 +70,8 @@ export class OrdersApi {
     };
     await apiClient.post<void>(`/orders/${basketId}/refund`, request);
   }
+  
+  async finalizeOrder(basketId: string): Promise<void> {
+    await apiClient.post<void>(`/orders/${basketId}/finalize`, null);
+  }
 }
