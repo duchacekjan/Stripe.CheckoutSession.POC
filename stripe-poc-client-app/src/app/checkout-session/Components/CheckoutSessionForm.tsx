@@ -1,7 +1,6 @@
 "use client";
 
 import {CheckoutContextValue, CurrencySelectorElement, PaymentElement, useCheckout} from "@stripe/react-stripe-js";
-import {useRouter} from "next/navigation";
 import {useState} from "react";
 import CustomerElements from "@/app/checkout-session/Components/CustomerElements";
 import {useApi} from "@/utils/api";
@@ -30,7 +29,6 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
                                                                    isLoading,
                                                                    setIsLoading
                                                                  }) => {
-  const router = useRouter();
   const api = useApi();
   const [email, setEmail] = useState<string>('jan.duchacek@itixo.com');
   const [emailError, setEmailError] = useState<string | null>(null);

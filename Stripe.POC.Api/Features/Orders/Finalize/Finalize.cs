@@ -82,8 +82,9 @@ public static class Finalize
                 await dbContext.SaveChangesAsync(ct);
             }
 
-            await Task.Delay(5_000, ct); // Simulate some processing delay
-            await SendOkAsync(new EmptyResponse(), ct);
+            // Simulate some processing delay
+            //await Task.Delay(5_000, ct); 
+            await SendNoContentAsync(ct);
         }
     }
 }

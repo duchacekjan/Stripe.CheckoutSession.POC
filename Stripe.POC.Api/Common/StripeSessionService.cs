@@ -9,12 +9,15 @@ using Stripe.Checkout;
 
 namespace POC.Api.Common;
 
-public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig> options)
+public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig> options, ILogger<StripeSessionService> logger)
 {
     private readonly Lazy<SessionService> _checkoutSessionService = new(() => new SessionService());
     private readonly StripeConfig _stripeConfig = options.Value;
 
-    public record Session(string ClientSecret, string SessionId);
+    public record Session(string ClientSecret, string SessionId, string Status)
+    {
+        public bool IsActive => Status is "open";
+    }
 
     public async Task<Session?> GetOrCreateAsync(Guid basketId, CancellationToken ct)
     {
@@ -27,7 +30,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         var session = await GetStoredSessionAsync(basketId, tickets, ct);
         if (session != null)
         {
-            return session;
+            return session.IsActive ? session : null;
         }
 
         return await CreateCheckoutSessionAsync(basketId, tickets, ct);
@@ -40,19 +43,48 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
             .Select(s => new { s.ClientSecret, s.SessionId })
             .FirstOrDefaultAsync(ct);
 
-        await UpdateSessionAsync(data?.SessionId, tickets, ct);
+        var session = await RetrieveSession(data?.SessionId);
+        if (session is null)
+        {
+            return null;
+        }
 
-        return string.IsNullOrEmpty(data?.ClientSecret) ? null : new Session(data.ClientSecret, data.SessionId);
+        if (!session.IsActive)
+        {
+            return session;
+        }
+
+        session = await UpdateSessionAsync(session, tickets, ct);
+
+        return session;
     }
 
-    public async Task<int> UpdateSessionAsync(string? sessionId, Dictionary<long, List<TicketDTO>> tickets, CancellationToken ct)
+    private async Task<Session?> RetrieveSession(string? sessionId)
     {
-        var updatedItems = await GetLineItemsForUpdateAsync(sessionId, tickets, ct);
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            return null;
+        }
+
+        try
+        {
+            var session = await _checkoutSessionService.Value.GetAsync(sessionId);
+            return new Session(session.ClientSecret, session.Id, session.Status);
+        }
+        catch (StripeException)
+        {
+            // If the session does not exist or is not active, we will create a new one
+            return null;
+        }
+    }
+
+    private async Task<Session> UpdateSessionAsync(Session session, Dictionary<long, List<TicketDTO>> tickets, CancellationToken ct)
+    {
+        var updatedItems = await GetLineItemsForUpdateAsync(session.SessionId, tickets, ct);
 
         if (updatedItems.Count == 0)
         {
-            // If there are no items left, we can delete the session
-            return 0;
+            return session with { Status = "empty" };
         }
 
         var updateOptions = new SessionUpdateOptions
@@ -60,8 +92,8 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
             LineItems = updatedItems
         };
 
-        await _checkoutSessionService.Value.UpdateAsync(sessionId, updateOptions, cancellationToken: ct);
-        return updatedItems.Count;
+        var checkoutSession = await _checkoutSessionService.Value.UpdateAsync(session.SessionId, updateOptions, cancellationToken: ct);
+        return new Session(checkoutSession.ClientSecret, checkoutSession.Id, checkoutSession.Status);
     }
 
     private async Task<List<SessionLineItemOptions>> GetLineItemsForUpdateAsync(string? sessionId, Dictionary<long, List<TicketDTO>> tickets, CancellationToken ct)
@@ -135,10 +167,10 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         var lineItems = CreateLineItems(tickets);
         var session = await CreateCheckoutSessionAsync(basketId, lineItems, ct);
         await SaveCheckoutSessionAsync(basketId, session, ct);
-        return new Session(session.ClientSecret, session.SessionId);
+        return new Session(session.ClientSecret, session.SessionId, session.Status);
     }
 
-    private async Task SaveCheckoutSessionAsync(Guid basketId, (string SessionId, string ClientSecret) session, CancellationToken ct)
+    private async Task SaveCheckoutSessionAsync(Guid basketId, Session session, CancellationToken ct)
     {
         var order = await dbContext.Orders.FirstOrDefaultAsync(f => f.BasketId == basketId, ct);
 
@@ -168,8 +200,9 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         return items;
     }
 
-    private async Task<(string SessionId, string ClientSecret)> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
+    private async Task<Session> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
     {
+        logger.LogInformation("Return url: {ReturnUrl}", _stripeConfig.ReturnUrl);
         var options = new SessionCreateOptions
         {
             UiMode = "custom",
@@ -198,6 +231,6 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         //options.AddExtraParam("permissions[update_discounts]", "server_only");
 
         var session = await _checkoutSessionService.Value.CreateAsync(options, cancellationToken: ct);
-        return (session.Id, session.ClientSecret);
+        return new Session(session.ClientSecret, session.Id, session.Status);
     }
 }

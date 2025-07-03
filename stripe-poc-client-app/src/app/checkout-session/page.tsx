@@ -4,10 +4,11 @@ import React, {useEffect, useState} from "react";
 import {Appearance, loadStripe} from '@stripe/stripe-js';
 import {CheckoutProvider} from '@stripe/react-stripe-js';
 import CheckoutSessionForm from "@/app/checkout-session/Components/CheckoutSessionForm";
-import {getCurrentBasketId} from "@/utils/basketIdProvider";
+import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
 import {useRouter} from "next/navigation";
 import CheckoutSummary from "@/app/checkout-session/Components/CheckoutSummary";
 import {useApi} from "@/utils/api";
+import {CheckoutSessionCreateResponse} from "@/types/CheckoutSession";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || '', {
   betas: ['custom_checkout_server_updates_1', 'custom_checkout_adaptive_pricing_2'],
@@ -18,59 +19,40 @@ const CheckoutSessionPage: React.FC = () => {
   const [hasPerformance, setHasPerformance] = useState<boolean>(false);
   const [bookingProtection, setBookingProtection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isOpened, setIsOpened] = useState<boolean>(false);
   const [loadingQueue, setLoadingQueue] = useState<boolean[]>([]);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const router = useRouter();
   const api = useApi();
+
+  const handleSession = (response: CheckoutSessionCreateResponse | null) => {
+    console.log("Checkout session created with response:", response);
+    if (response === null) {
+      console.warn("No session created. Redirecting to seat plan.");
+      setCurrentBasketId(null);
+      router.push('/');
+    } else {
+      setClientSecret(response.clientSecret);
+    }
+  }
 
   useEffect(() => {
     const currentBasketId = getCurrentBasketId();
     if (currentBasketId) {
       setBasketId(currentBasketId);
+      api.checkoutSessions.create(currentBasketId)
+        .then((response) => {
+          handleSession(response)
+        })
+        .catch((error) => {
+          setError(`Failed to create checkout session. Please try again. ${error}`);
+          setIsLoading(false);
+        });
     } else {
       console.log("No basket ID found. Redirecting to seat plan.");
       router.push('/');
     }
   }, []);
-
-  useEffect(() => {
-    if (!sessionId) {
-      setIsOpened(false);
-      return;
-    }
-    console.log("Fetching checkout session status for session ID:", sessionId);
-    api.checkoutSessions.status(sessionId)
-      .then((response) => {
-        console.log("Checkout session status response:", response.status);
-        if (response.status === 'open') {
-          setIsOpened(true);
-          setIsLoading(false);
-        } else {
-          setIsOpened(false);
-          setIsLoading(false);
-        }
-      })
-      .catch((error) => {
-        setError(`Failed to fetch checkout session status. Please try again. ${error}`);
-        setIsOpened(false);
-      })
-  }, [sessionId]);
-
-  const fetchClientSecret = async () => {
-    setIsLoading(true);
-    try {
-      const response = await api.checkoutSessions.create(basketId!);
-      console.log("Checkout session created with response:", response);
-      setSessionId(response.sessionId);
-      return response.clientSecret;
-    } catch (error) {
-      setError(`Failed to create checkout session. Please try again. ${error}`);
-      setIsLoading(false);
-      return Promise.reject(error);
-    }
-  }
 
   const handleReload = () => {
     setError(null);
@@ -201,66 +183,60 @@ const CheckoutSessionPage: React.FC = () => {
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           padding: '8px'
         }}>
-          {basketId && (
+          {clientSecret && (
             <CheckoutProvider
               stripe={stripePromise}
               options={{
-                fetchClientSecret: fetchClientSecret,
+                fetchClientSecret: () => Promise.resolve(clientSecret),
                 elementsOptions: {
                   appearance: appearance
                 }
               }}
             >
-              {isOpened && (
-                <>
-                  <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <div>
-                        <h2 style={{ color: '#0c4a6e'}}>Checkout</h2>
-                      </div>
-                      <div style={{display: 'flex', flexDirection: 'row-reverse', gap: '8px'}}>
-                        <div style={{display: 'flex', gap: '8px'}}>
-                          <button type={'button'}
-                                  onClick={handleShopMore}>
-                            Shop more
-                          </button>
-                          <button type={'button'}
-                                  onClick={handleBuyVoucher}>
-                            Buy voucher
-                          </button>
-                        </div>
-                      </div>  
-                    </div>                    
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 290px',
-                      gap: '8px'
-                    }}>
-                      <CheckoutSessionForm
-                        basketId={basketId!}
-                        hasPerformance={hasPerformance}
-                        bookingProtection={bookingProtection}
-                        setBookingProtection={handleChangeBookingProtection}
-                        isLoading={isLoading}
-                        setIsLoading={handleLoadingQueue}
-                      />
-                      <CheckoutSummary
-                        setHasPerformance={setHasPerformance}
-                        bookingProtection={bookingProtection}
-                        setBookingProtection={handleChangeBookingProtection}
-                        setIsLoading={handleLoadingQueue}/>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                  <div>
+                    <h2 style={{color: '#0c4a6e'}}>Checkout</h2>
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'row-reverse', gap: '8px'}}>
+                    <div style={{display: 'flex', gap: '8px'}}>
+                      <button type={'button'}
+                              onClick={handleShopMore}>
+                        Shop more
+                      </button>
+                      <button type={'button'}
+                              onClick={handleBuyVoucher}>
+                        Buy voucher
+                      </button>
                     </div>
                   </div>
-                </>
-              )}
-
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 290px',
+                  gap: '8px'
+                }}>
+                  <CheckoutSessionForm
+                    basketId={basketId!}
+                    hasPerformance={hasPerformance}
+                    bookingProtection={bookingProtection}
+                    setBookingProtection={handleChangeBookingProtection}
+                    isLoading={isLoading}
+                    setIsLoading={handleLoadingQueue}
+                  />
+                  <CheckoutSummary
+                    setHasPerformance={setHasPerformance}
+                    bookingProtection={bookingProtection}
+                    setBookingProtection={handleChangeBookingProtection}
+                    setIsLoading={handleLoadingQueue}/>
+                </div>
+              </div>
             </CheckoutProvider>
           )}
         </div>
       </div>
     </div>
-  )
-    ;
+  );
 };
 
 export default CheckoutSessionPage;
