@@ -80,6 +80,11 @@ const CheckoutSessionPage: React.FC = () => {
     theme: 'stripe',
   };
 
+  const handleChangeBookingProtection = (protection: boolean) => {
+    console.log("PAGE => booking protection to:", protection);
+    setBookingProtection(protection)
+  }
+
   return (
     <div style={{minHeight: '100vh', backgroundColor: '#f9fafb', padding: '16px 0'}}>
       {/* Loading Overlay */}
@@ -206,13 +211,13 @@ const CheckoutSessionPage: React.FC = () => {
                       basketId={basketId!}
                       hasPerformance={hasPerformance}
                       bookingProtection={bookingProtection}
-                      setBookingProtection={setBookingProtection}
+                      setBookingProtection={handleChangeBookingProtection}
                     />
                   </div>
                   <CheckoutSummary
                     setHasPerformance={setHasPerformance}
                     bookingProtection={bookingProtection}
-                    setBookingProtection={setBookingProtection}/>
+                    setBookingProtection={handleChangeBookingProtection}/>
                 </>
               )}
 

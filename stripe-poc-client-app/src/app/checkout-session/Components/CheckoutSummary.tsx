@@ -14,7 +14,11 @@ interface CheckoutSummaryProps {
   setBookingProtection: (protection: boolean) => void;
 }
 
-const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, bookingProtection, setBookingProtection}) => {
+const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
+                                                           setHasPerformance,
+                                                           bookingProtection,
+                                                           setBookingProtection
+                                                         }) => {
   const checkout = useCheckout();
   const router = useRouter();
   const api = useApi();
@@ -44,23 +48,30 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
     if (response.status === UpdateStatus.Emptied) {
       setCurrentBasketId(null);
       router.push('/');
+      response.status = UpdateStatus.Error;
       return Promise.reject(response);
     }
     return response;
   }
-  
-  const handleTicketChanged=(response: GetTicketsResponse)=>{
+
+  const handleTicketChanged = (response: GetTicketsResponse) => {
     setTickets(response.tickets);
     setBasketTotal(response.totalPrice.toFixed(2))
     const allTickets = Object.values(response.tickets).flat();
     setHasPerformance(allTickets.some(ticket => ticket.performanceId > 0));
     setBookingProtection(allTickets.some(ticket => ticket.performanceId === -2));
   }
-  
+
   const handleRemovedTicket = async (ticketsToRemove: number[]) => {
 
     try {
-      const response = await checkout.runServerUpdate(() => updateCheckout(ticketsToRemove));
+      const removeTicketsResponse = await api.orders.removeTickets(basketId!, ticketsToRemove);
+      if (removeTicketsResponse.status === UpdateStatus.Emptied) {
+        setCurrentBasketId(null);
+        router.push('/');
+        return
+      }
+      const response = await checkout.runServerUpdate(() => api.checkoutSessions.update(basketId!))
       if (response.type !== 'success') {
         // set error state
         return;
@@ -72,6 +83,10 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
       console.error("Error updating tickets:", error);
     }
   };
+
+  if (!basketTotal) {
+    return null;
+  }
 
   return (
     <div style={{

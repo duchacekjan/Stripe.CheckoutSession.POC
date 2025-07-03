@@ -1,6 +1,7 @@
 'use client';
 
 import {CheckoutContextValue, useCheckout} from "@stripe/react-stripe-js";
+import {useState} from "react";
 
 interface CustomerElementsProps {
   email: string;
@@ -28,6 +29,7 @@ const CustomerElements: React.FC<CustomerElementsProps> = ({
                                                              setBookingProtection
                                                            }) => {
   const checkout = useCheckout();
+  const [bookingProtectionValue, setBookingProtectionValue] = useState<string>(bookingProtection ? 'yes' : 'no');
   const handleBlur = async () => {
     if (!email) {
       return;
@@ -45,8 +47,12 @@ const CustomerElements: React.FC<CustomerElementsProps> = ({
   };
 
   const handleBookingProtectionChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value === 'yes';
-    await setBookingProtection(newValue);
+    const newValue = e.target.value;
+    setBookingProtectionValue(newValue);
+    const protection = newValue === 'yes';
+
+    console.log("ELEMENTS => booking protection to:", protection);
+    await setBookingProtection(protection);
   }
   return (
     <>
@@ -87,7 +93,7 @@ const CustomerElements: React.FC<CustomerElementsProps> = ({
                     type="radio"
                     name="customerType"
                     value="no"
-                    checked={!bookingProtection}
+                    checked={bookingProtectionValue === 'no'}
                     onChange={handleBookingProtectionChange}
                   />
                   No protection
@@ -97,7 +103,7 @@ const CustomerElements: React.FC<CustomerElementsProps> = ({
                     type="radio"
                     name="customerType"
                     value="yes"
-                    checked={bookingProtection}
+                    checked={bookingProtectionValue === 'yes'}
                     onChange={handleBookingProtectionChange}
                   />
                   £5 booking protection

@@ -49,6 +49,15 @@ export interface PaidOrder {
   totalPrice: number;
 }
 
+export interface UpdateSessionRequest {
+  basketId: string;
+}
+
+export interface UpdateSessionResponse {
+  type: 'success' | 'error'
+  message?: string;
+}
+
 export enum UpdateStatus {
   Updated = 'updated',
   Emptied = 'emptied',

@@ -20,7 +20,12 @@ const validateEmail = async (email: string, checkout: CheckoutContextValue) => {
   return {isValid, message: !isValid ? updateResult.error.message : null};
 }
 
-const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasPerformance, bookingProtection, setBookingProtection}) => {
+const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
+                                                                   basketId,
+                                                                   hasPerformance,
+                                                                   bookingProtection,
+                                                                   setBookingProtection
+                                                                 }) => {
   const router = useRouter();
   const api = useApi();
   const [email, setEmail] = useState<string>('jan.duchacek@itixo.com');
@@ -71,8 +76,10 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasP
   };
 
   const handleBookingProtectionChange = async (protection: boolean) => {
+    console.log("FORM => booking protection to:", protection);
     try {
       await api.orders.updatedBookingProtection(basketId, protection);
+      await checkout.runServerUpdate(()=>api.checkoutSessions.update(basketId))
       setBookingProtection(protection);
     } catch (error) {
       setMessage("Failed to update booking protection. Please try again later.");

@@ -2,6 +2,7 @@ using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using POC.Api.Common;
 using POC.Api.DTOs;
+using POC.Api.Features.Inventory.Seed;
 using POC.Api.Features.Orders.Shared;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
@@ -14,7 +15,7 @@ public static class RemoveTickets
 {
     public record Request(Guid BasketId, List<long> SeatIds);
 
-    public record Response(UpdateStatus Status, string? Message = null);
+    public record Response(UpdateStatus Status);
 
     public enum UpdateStatus
     {
@@ -49,13 +50,12 @@ public static class RemoveTickets
                 return;
             }
 
-            var tickets = await dbContext.OrderTicketsAsync(req.BasketId, ct);
-            var ticketsToRemove = tickets
-                .Where(w => req.SeatIds.Contains(w.SeatId))
-                .ToList();
-
-            await RemoveTicketsFromOrder(ticketsToRemove, ct);
-            var response = await RemoveTicketsFromSession(req.BasketId, ticketsToRemove, ct);
+            await RemoveTicketsFromOrder(req.BasketId, req.SeatIds, ct);
+            var tickets = await dbContext.OrderTickets2Async(req.BasketId, ct);
+            var remainingTickets = tickets
+                .Any(w => w.Value.Count > 0);
+            var status = remainingTickets ? UpdateStatus.Updated : UpdateStatus.Emptied;
+            var response = new Response(status);
             switch (response.Status)
             {
                 case UpdateStatus.Emptied:
@@ -74,10 +74,11 @@ public static class RemoveTickets
             }
         }
 
-        private async Task RemoveTicketsFromOrder(List<TicketDTO> tickets, CancellationToken cancellationToken)
+        private async Task RemoveTicketsFromOrder(Guid basketId, List<long> seatIds, CancellationToken cancellationToken)
         {
-            var seatIds = tickets.Select(s => s.SeatId).ToList();
             var seatsToUpdate = await dbContext.Seats
+                .Where(w => w.OrderItemId != null)
+                .Where(w => w.OrderItem!.Order.BasketId == basketId)
                 .Where(w => seatIds.Contains(w.Id))
                 .ToListAsync(cancellationToken);
             foreach (var seat in seatsToUpdate)
@@ -85,65 +86,32 @@ public static class RemoveTickets
                 seat.OrderItemId = null;
             }
 
+            var hasPerformance = await dbContext.Seats
+                .Where(w => !seatsToUpdate.Select(s => s.Id).Contains(w.Id))
+                .Where(w => w.OrderItemId != null)
+                .Where(w => w.OrderItem!.Order.BasketId == basketId)
+                .Where(w => w.PerformanceId > 0)
+                .AnyAsync(cancellationToken);
+
+            var hasBookingProtection = await dbContext.Seats
+                .Where(w => w.OrderItemId != null)
+                .Where(w => w.OrderItem!.Order.BasketId == basketId)
+                .Where(w => w.PerformanceId == Seed.BookingProtection.Performances.First().Id)
+                .AnyAsync(cancellationToken);
+            if (!hasPerformance && hasBookingProtection)
+            {
+                var bookingProtection = await dbContext.Seats
+                    .Where(w => w.OrderItemId != null)
+                    .Where(w => w.OrderItem!.Order.BasketId == basketId)
+                    .Where(w => w.PerformanceId == Seed.BookingProtection.Performances.First().Id)
+                    .ToListAsync(cancellationToken);
+                foreach (var seat in bookingProtection)
+                {
+                    seat.OrderItemId = null;
+                }
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
-        }
-
-        private async Task<Response> RemoveTicketsFromSession(Guid basketId, List<TicketDTO> tickets, CancellationToken cancellationToken)
-        {
-            var sessionId = await dbContext.CheckoutSessions
-                .Where(w => w.Order.BasketId == basketId)
-                .Select(s => s.SessionId)
-                .FirstAsync(cancellationToken);
-            try
-            {
-                var service = new SessionService();
-                var lineItems = await service.LineItems.ListAsync(sessionId, cancellationToken: cancellationToken);
-                var updatedItems = lineItems.Select(s => new SessionLineItemOptions
-                {
-                    Id = s.Id,
-                    Quantity = s.Quantity
-                }).ToList();
-                foreach (var lineItem in lineItems)
-                {
-                    var priceBandTickets = lineItem.MatchingTickets(tickets);
-
-                    if (priceBandTickets.Count == 0)
-                    {
-                        // No tickets to remove for this price band, keep the item
-                        continue;
-                    }
-
-                    var existingItem = updatedItems.First(f => f.Id == lineItem.Id);
-                    var newQuantity = lineItem.Quantity - priceBandTickets.Count;
-                    if (newQuantity > 0)
-                    {
-                        existingItem.Quantity = newQuantity;
-                    }
-                    else
-                    {
-                        updatedItems.Remove(existingItem);
-                    }
-                    
-                    tickets.RemoveAll(r => priceBandTickets.Any(a => a.SeatId == r.SeatId));
-                }
-
-                if (updatedItems.Count == 0)
-                {
-                    return new Response(UpdateStatus.Emptied);
-                }
-
-                var updateOptions = new SessionUpdateOptions
-                {
-                    LineItems = updatedItems
-                };
-                await service.UpdateAsync(sessionId, updateOptions, cancellationToken: cancellationToken);
-            }
-            catch (Exception e)
-            {
-                return new Response(UpdateStatus.Error, e.Message);
-            }
-
-            return new Response(UpdateStatus.Updated);
         }
     }
 }
