@@ -74,7 +74,7 @@ public static class CreateSession
             return string.IsNullOrEmpty(data?.ClientSecret) ? null : new Response(data.ClientSecret, data.SessionId);
         }
 
-        private async Task SaveCheckoutSessionAsync(Guid basketId, (string SessionId, string ClientSecret, string PaymentIntentId) session, CancellationToken ct)
+        private async Task SaveCheckoutSessionAsync(Guid basketId, (string SessionId, string ClientSecret) session, CancellationToken ct)
         {
             var order = await dbContext.Orders.FirstOrDefaultAsync(f => f.BasketId == basketId, ct);
 
@@ -87,7 +87,6 @@ public static class CreateSession
             {
                 SessionId = session.SessionId,
                 ClientSecret = session.ClientSecret,
-                PaymentIntentId = session.PaymentIntentId,
                 OrderId = order.Id
             };
             await dbContext.SaveChangesAsync(ct);
@@ -105,12 +104,15 @@ public static class CreateSession
             return items;
         }
 
-        private async Task<(string SessionId, string ClientSecret, string PaymentIntentId)> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
+        private async Task<(string SessionId, string ClientSecret)> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
         {
             var options = new SessionCreateOptions
             {
                 UiMode = "custom",
-                Permissions = new SessionPermissionsOptions(),
+                Permissions = new SessionPermissionsOptions
+                {
+                    UpdateLineItems = "server_only"
+                },
                 Mode = "payment",
                 ReturnUrl = _stripeConfig.ReturnUrl,
                 AdaptivePricing = new SessionAdaptivePricingOptions { Enabled = true },
@@ -124,11 +126,16 @@ public static class CreateSession
                 }
             };
 
-            options.AddExtraParam("permissions[update_line_items]", "server_only");
-            options.AddExtraParam("permissions[update_discounts]", "server_only");
+            //options.AddExtraParam("permissions[update_line_items]", "server_only");
+            //TODO Setting permissions does not work here. It is unknown value
+            //Stripe.StripeException: Received unknown parameter: permissions[update_discounts]. Did you mean update_shipping_details?
+            //Tried 48.3.0-beta.1
+            //Tried 48.3.0-beta.2
+            //Tried 48.4.0-beta.1
+            //options.AddExtraParam("permissions[update_discounts]", "server_only");
 
             var session = await _checkoutSessionService.Value.CreateAsync(options, cancellationToken: ct);
-            return (session.Id, session.ClientSecret, session.PaymentIntentId);
+            return (session.Id, session.ClientSecret);
         }
     }
 }

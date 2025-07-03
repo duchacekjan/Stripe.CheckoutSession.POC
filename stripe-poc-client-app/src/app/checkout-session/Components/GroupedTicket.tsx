@@ -37,6 +37,7 @@ const GroupedTicket: React.FC<{
         }}>{info.eventName}</span>
         {info.performanceId > -2 && (
           <button
+            type={'button'}
             onClick={() => ticketsRemoved(tickets)}
             style={{
               color: '#ef4444',

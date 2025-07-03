@@ -6,7 +6,6 @@ namespace POC.Api.Persistence.Entities;
 public class Payment : Entity
 {
     public string SessionId { get; set; } = string.Empty;
-    public string PaymentIntentId { get; set; } = string.Empty;
     public PaymentStatus Status { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
@@ -27,9 +26,6 @@ public class PaymentEntityConfiguration : IEntityTypeConfiguration<Payment>
     {
         builder.HasKey(k => k.Id);
         builder.Property(p => p.SessionId)
-            .IsRequired()
-            .HasMaxLength(255);
-        builder.Property(p => p.PaymentIntentId)
             .IsRequired()
             .HasMaxLength(255);
         builder.Property(p => p.Status)

@@ -29,6 +29,7 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasP
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const checkout = useCheckout();
+  //TODO this code from docs is not working, need to investigate
   // checkout.onChange('change', (session) => {
   //   // Handle changes to the checkout session
   // });
@@ -43,6 +44,7 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasP
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    console.warn("Submitting checkout form with basketId:", basketId);
 
     setIsLoading(true);
 
@@ -53,7 +55,7 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasP
       setIsLoading(false);
       return;
     }
-    
+    await api.orders.finalizeOrder(basketId);
     const confirmResult = await checkout.confirm();
 
     // This point will only be reached if there is an immediate error when
@@ -82,10 +84,12 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasP
       <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
         <div style={{display: 'flex', gap: '8px'}}>
           <button style={{marginBottom: '8px'}}
+                  type={'button'}
                   onClick={handleShopMore}>
             Shop more
           </button>
           <button style={{marginBottom: '8px'}}
+                  type={'button'}
                   onClick={handleBuyVoucher}>
             Buy voucher
           </button>

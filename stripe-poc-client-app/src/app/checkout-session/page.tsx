@@ -160,6 +160,7 @@ const CheckoutSessionPage: React.FC = () => {
               {error}
             </div>
             <button
+              type={'button'}
               onClick={() => handleReload()}
               title="Reload page"
               style={{
