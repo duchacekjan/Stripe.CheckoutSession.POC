@@ -1,10 +1,8 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace POC.Api.Persistence.Entities;
 
-[Table("CheckoutSessions")]
 public class CheckoutSession : Entity
 {
     public string SessionId { get; set; } = string.Empty;
@@ -27,5 +25,7 @@ public class CheckoutSessionEntityConfiguration : IEntityTypeConfiguration<Check
         builder.HasOne(o => o.Order)
             .WithOne(w => w.CheckoutSession)
             .HasForeignKey<CheckoutSession>(f => f.OrderId);
+        
+        builder.ToTable("CheckoutSessions");
     }
 }

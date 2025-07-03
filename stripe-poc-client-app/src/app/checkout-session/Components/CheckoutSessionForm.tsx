@@ -53,7 +53,7 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({basketId, hasP
       setIsLoading(false);
       return;
     }
-
+    
     const confirmResult = await checkout.confirm();
 
     // This point will only be reached if there is an immediate error when

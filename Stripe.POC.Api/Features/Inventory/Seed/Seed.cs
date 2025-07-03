@@ -60,7 +60,7 @@ public static class Seed
         public override async Task HandleAsync(CancellationToken ct)
         {
             await dbContext.Database.EnsureDeletedAsync(ct);
-            await dbContext.Database.EnsureCreatedAsync(ct);
+            await dbContext.Database.MigrateAsync(ct);
 
             dbContext.Prices.AddRange(PriceSeed);
             await dbContext.SaveChangesAsync(ct);

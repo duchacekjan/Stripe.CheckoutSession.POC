@@ -1,10 +1,8 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace POC.Api.Persistence.Entities;
 
-[Table("Performances")]
 public class Performance : Entity
 {
     public DateTime PerformanceDate { get; set; }
@@ -22,5 +20,7 @@ public class PerformanceEntityConfiguration : IEntityTypeConfiguration<Performan
         builder.HasKey(t => t.Id);
         builder.Property(p => p.PerformanceDate).IsRequired();
         builder.Property(p => p.DurationMinutes).IsRequired();
+        
+        builder.ToTable("Performances");
     }
 }

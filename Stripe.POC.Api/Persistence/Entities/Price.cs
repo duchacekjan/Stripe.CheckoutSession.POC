@@ -1,9 +1,8 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace POC.Api.Persistence.Entities;
 
-[Table("Prices")]
 public class Price : Entity
 {
     public string Name { get; set; } = string.Empty;
@@ -12,7 +11,7 @@ public class Price : Entity
 
 public class PriceEntityConfiguration : IEntityTypeConfiguration<Price>
 {
-    public void Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<Price> builder)
+    public void Configure(EntityTypeBuilder<Price> builder)
     {
         builder.HasKey(t => t.Id);
         builder.Property(p => p.Name).HasMaxLength(100).IsRequired();
@@ -22,5 +21,7 @@ public class PriceEntityConfiguration : IEntityTypeConfiguration<Price>
             .WithOne(o => o.Price)
             .HasForeignKey(f => f.PriceId)
             .OnDelete(DeleteBehavior.Restrict); // Assuming you don't want to delete prices when seats are deleted
+        
+        builder.ToTable("Prices");
     }
 }

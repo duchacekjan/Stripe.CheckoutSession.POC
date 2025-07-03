@@ -1,9 +1,8 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace POC.Api.Persistence.Entities;
 
-[Table("OrderItems")]
 public class OrderItem : Entity
 {
     public long OrderId { get; set; }
@@ -13,11 +12,13 @@ public class OrderItem : Entity
 
 public class OrderItemsEntityConfiguration : IEntityTypeConfiguration<OrderItem>
 {
-    public void Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<OrderItem> builder)
+    public void Configure(EntityTypeBuilder<OrderItem> builder)
     {
         builder.HasKey(t => t.Id);
         builder.HasMany(o => o.Seats)
             .WithOne(s => s.OrderItem)
             .HasForeignKey(f => f.OrderItemId);
+        
+        builder.ToTable("OrderItems");
     }
 }
