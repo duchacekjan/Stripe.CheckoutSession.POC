@@ -124,6 +124,7 @@ public static class CreateSession
             };
 
             options.AddExtraParam("permissions[update_line_items]", "server_only");
+            options.AddExtraParam("permissions[update_discounts]", "server_only");
 
             var session = await _checkoutSessionService.Value.CreateAsync(options, cancellationToken: ct);
             return (session.Id, session.ClientSecret);
