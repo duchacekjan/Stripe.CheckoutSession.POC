@@ -1,5 +1,7 @@
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using POC.Api.DTOs;
 using POC.Api.Features.Inventory.Seed;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
@@ -33,9 +35,52 @@ public static class BuyVoucher
 
         public override async Task HandleAsync(Request req, CancellationToken ct)
         {
+            var (orderId, basketId) = await GetOrderId(req.BasketId, ct);
+            if (orderId is null)
+            {
+                await SendNotFoundAsync(ct);
+                return;
+            }
+
+            var priceId = await GetPriceId(req.Price, ct);
+            await CreateVoucher(orderId.Value, priceId, ct);
+
+            var response = new Response(basketId);
+            await SendAsync(response, StatusCodes.Status201Created, ct);
+        }
+
+        private async Task CreateVoucher(long orderId, long priceId, CancellationToken ct)
+        {
+            var orderItem = await dbContext.OrderItems
+                .Where(w => w.OrderId == orderId)
+                .Where(w => w.Seats.Any(s => s.PerformanceId == Seed.Voucher.Performances.First().Id && s.PriceId == priceId))
+                .FirstOrDefaultAsync(ct);
+
+            if (orderItem is null)
+            {
+                orderItem = new OrderItem
+                {
+                    OrderId = orderId,
+                    Seats = []
+                };
+                dbContext.OrderItems.Add(orderItem);
+            }
+
+            orderItem.Seats.Add(new Seat
+            {
+                Row = Guid.NewGuid().ToString(),
+                Number = (uint)Math.Abs(orderItem.Seats.Count),
+                PriceId = priceId,
+                PerformanceId = Seed.Voucher.Performances.First().Id,
+            });
+            await dbContext.SaveChangesAsync(ct);
+        }
+
+        private async Task<(long? OrderId, Guid BasketId)> GetOrderId(Guid? requestBasketId, CancellationToken cancellationToken)
+        {
             long? orderId;
-            Guid basketId = req.BasketId ?? Guid.NewGuid();
-            if (req.BasketId is null)
+            Guid basketId = requestBasketId ?? Guid.NewGuid();
+            if (requestBasketId is null)
             {
                 var order = new Order
                 {
@@ -43,41 +88,17 @@ public static class BuyVoucher
                     Status = OrderStatus.Created
                 };
                 var entity = dbContext.Orders.Add(order);
-                await dbContext.SaveChangesAsync(ct);
+                await dbContext.SaveChangesAsync(cancellationToken);
                 orderId = entity.Entity.Id;
             }
             else
             {
-                orderId = await dbContext.Orders.Where(w => w.BasketId == req.BasketId)
+                orderId = await dbContext.Orders.Where(w => w.BasketId == requestBasketId)
                     .Select(s => (long?)s.Id)
-                    .FirstOrDefaultAsync(ct);
-                if (orderId is null)
-                {
-                    await SendNotFoundAsync(ct);
-                    return;
-                }
+                    .FirstOrDefaultAsync(cancellationToken);
             }
 
-            var priceId = await GetPriceId(req.Price, ct);
-            var orderItem = new OrderItem
-            {
-                OrderId = orderId.Value,
-                Seats =
-                [
-                    new Seat
-                    {
-                        Row = Guid.NewGuid().ToString(),
-                        Number = 0,
-                        PriceId = priceId,
-                        PerformanceId = Seed.Voucher.Performances.First().Id,
-                    }
-                ]
-            };
-            dbContext.OrderItems.Add(orderItem);
-            await dbContext.SaveChangesAsync(ct);
-
-            var response = new Response(basketId);
-            await SendAsync(response, StatusCodes.Status201Created, ct);
+            return (orderId, basketId);
         }
 
         private async Task<long> GetPriceId(decimal price, CancellationToken cancellationToken)
@@ -97,5 +118,27 @@ public static class BuyVoucher
             await dbContext.SaveChangesAsync(cancellationToken);
             return entity.Id;
         }
+
+        // private async Task AddVoucherToCheckoutSession(Guid basketId, CancellationToken ct)
+        // {
+        //     var session = await dbContext.CheckoutSessions
+        //         .Where(w => w.Order.BasketId == basketId)
+        //         .FirstOrDefaultAsync(ct);
+        //
+        //     if (session is null)
+        //     {
+        //         return;
+        //     }
+        //
+        //     var voucher = new Seat
+        //     {
+        //         Row = Guid.NewGuid().ToString(),
+        //         Number = 0,
+        //         PerformanceId = Seed.Voucher.Performances.First().Id,
+        //         OrderItemId = session.OrderItemId
+        //     };
+        //     dbContext.Seats.Add(voucher);
+        //     await dbContext.SaveChangesAsync(ct);
+        // }
     }
 }

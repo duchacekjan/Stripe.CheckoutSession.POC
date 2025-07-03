@@ -28,6 +28,8 @@ StripeConfiguration.AddBetaVersion("checkout_server_update_beta", "v1");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("AppContext")));
 
+builder.Services.AddScoped<StripeSessionService>();
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

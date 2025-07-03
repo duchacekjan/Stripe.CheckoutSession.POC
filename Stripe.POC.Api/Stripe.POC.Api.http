@@ -81,3 +81,9 @@ POST {{host}}/orders/{{basketFinalize}}/finalize
 Accept: application/json
 Content-Type: application/json
 Authorization: {{token}}
+
+###
+POST {{host}}/vouchers/buy
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
