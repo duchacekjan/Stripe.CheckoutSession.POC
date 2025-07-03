@@ -2,7 +2,7 @@
 
 import React, {useEffect, useState} from "react";
 import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
-import {Ticket, UpdateStatus} from "@/types/Orders";
+import {GetTicketsResponse, Ticket, UpdateStatus} from "@/types/Orders";
 import GroupedTicket from "@/app/checkout-session/Components/GroupedTicket";
 import {useCheckout} from "@stripe/react-stripe-js";
 import {useRouter} from "next/navigation";
@@ -19,7 +19,8 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
   const router = useRouter();
   const api = useApi();
   const [basketId, setBasketId] = useState<string | null>(null);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets, setTickets] = useState<Record<number, Ticket[]>>([]);
+  const [basketTotal, setBasketTotal] = useState<string>('');
 
   useEffect(() => {
     const currentBasketId = getCurrentBasketId();
@@ -27,9 +28,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
       setBasketId(currentBasketId);
       api.orders.getTickets(currentBasketId)
         .then(response => {
-          setTickets(response);
-          setHasPerformance(response.some(ticket => ticket.performanceId > 0));
-          setBookingProtection(response.some(ticket => ticket.performanceId === -2));
+          handleTicketChanged(response);
         })
         .catch(error => {
           console.error("Error fetching tickets:", error);
@@ -40,15 +39,6 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
     }
   }, [bookingProtection]);
 
-  const groupedTickets = tickets.reduce((acc, ticket) => {
-    const rowKey = `${ticket.performanceId}-${ticket.priceId}`;
-    if (!acc[rowKey]) {
-      acc[rowKey] = [];
-    }
-    acc[rowKey].push(ticket);
-    return acc;
-  }, {} as Record<string, Ticket[]>);
-
   const updateCheckout = async (ticketsToRemove: number[]) => {
     const response = await api.orders.removeTickets(basketId!, ticketsToRemove);
     if (response.status === UpdateStatus.Emptied) {
@@ -58,6 +48,15 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
     }
     return response;
   }
+  
+  const handleTicketChanged=(response: GetTicketsResponse)=>{
+    setTickets(response.tickets);
+    setBasketTotal(response.totalPrice.toFixed(2))
+    const allTickets = Object.values(response.tickets).flat();
+    setHasPerformance(allTickets.some(ticket => ticket.performanceId > 0));
+    setBookingProtection(allTickets.some(ticket => ticket.performanceId === -2));
+  }
+  
   const handleRemovedTicket = async (ticketsToRemove: number[]) => {
 
     try {
@@ -68,7 +67,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
       }
 
       const ticketsResponse = await api.orders.getTickets(basketId!)
-      setTickets(ticketsResponse);
+      handleTicketChanged(ticketsResponse);
     } catch (error) {
       console.error("Error updating tickets:", error);
     }
@@ -102,9 +101,9 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
             gap: '8px'
           }}>
             <h4>Basket summary</h4>
-            {Object.values(groupedTickets).map((tickets, index) => (
-              <GroupedTicket tickets={tickets}
-                             key={`${tickets[0].performanceId}-${tickets[0].priceId}-${index}`}
+            {Object.values(tickets).map((orderItemTickets, index) => (
+              <GroupedTicket tickets={orderItemTickets}
+                             key={`${orderItemTickets[0].performanceId}-${orderItemTickets[0].priceId}-${index}`}
                              ticketsRemoved={removedTickets => handleRemovedTicket(removedTickets.map(s => s.seatId))}/>
             ))}
             <div
@@ -116,7 +115,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({setHasPerformance, boo
               </div>
               <div>
               <span style={{fontSize: '12pt', fontWeight: 'bold'}}>
-                £ {tickets.reduce((total, ticket) => total + ticket.price, 0).toFixed(2)}
+                £ {basketTotal}
               </span>
               </div>
             </div>

@@ -17,7 +17,8 @@ export interface AddSeatsToOrderResponse {
 }
 
 export interface GetTicketsResponse {
-  tickets: Ticket[];
+  tickets: Record<number, Ticket[]>;
+  totalPrice: number;
 }
 
 export interface RemoveTicketsRequest {

@@ -50,8 +50,6 @@ public static class AddSeats
 
             await dbContext.SaveChangesAsync(ct);
 
-            await UpdateLineItems(order.Value, req.SeatIds, items, ct);
-
             var totalPrice = await dbContext.OrderItems
                 .Where(o => o.OrderId == order.Value)
                 .SumAsync(o => o.Seats.Sum(s => s.Price.Amount), cancellationToken: ct);
@@ -80,65 +78,6 @@ public static class AddSeats
             }
 
             return orderItems;
-        }
-
-        private async Task UpdateLineItems(long orderId, long[] seatIds, List<OrderItem> items, CancellationToken cancellationToken)
-        {
-            var sessionId = await dbContext.CheckoutSessions
-                .Where(w => w.OrderId == orderId)
-                .Select(s => s.SessionId)
-                .FirstOrDefaultAsync(cancellationToken);
-            if (string.IsNullOrEmpty(sessionId))
-            {
-                return;
-            }
-
-            var info = await dbContext.Seats
-                .Where(w => seatIds.Contains(w.Id))
-                .Select(s => new
-                {
-                    s.Id, EventId = s.Performance.Event.Id, EventName = s.Performance.Event.Name, s.Performance.PerformanceDate, s.PerformanceId, s.PriceId, s.OrderItemId, s.Price.Amount, s.Row,
-                    s.Number
-                })
-                .ToListAsync(cancellationToken);
-
-            var service = new SessionService();
-            var lineItems = await service.LineItems.ListAsync(sessionId, cancellationToken: cancellationToken);
-
-            var updatedItems = lineItems.Select(s => new SessionLineItemOptions
-            {
-                Id = s.Id,
-                Quantity = s.Quantity
-            }).ToList();
-
-            var groupedTickets = info
-                .GroupBy(k => k.OrderItemId.GetValueOrDefault())
-                .ToDictionary(k => k.Key, v => v.Select(s => new TicketDTO(s.EventId, s.EventName, s.PerformanceId, s.PerformanceDate, s.PriceId, s.Amount, s.Id, s.Row, s.Number)).ToList());
-            foreach (var ticketsGroup in groupedTickets)
-            {
-                foreach (var lineItem in lineItems)
-                {
-                    var tickets = ticketsGroup.Value;
-                    var priceBandTickets = lineItem.MatchingTickets(tickets);
-                    if (priceBandTickets.Count == 0)
-                    {
-                        var newItem = tickets.ToLineItem();
-                        updatedItems.Add(newItem);
-                    }
-                    else
-                    {
-                        var existingItem = updatedItems.First(f => f.Id == lineItem.Id);
-                        existingItem.Quantity = lineItem.Quantity + priceBandTickets.Count;
-                    }
-                }
-            }
-
-            var updateOptions = new SessionUpdateOptions
-            {
-                LineItems = updatedItems
-            };
-
-            await service.UpdateAsync(sessionId, updateOptions, cancellationToken: cancellationToken);
         }
     }
 }

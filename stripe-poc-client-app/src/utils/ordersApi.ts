@@ -25,9 +25,9 @@ export class OrdersApi {
     return response.data.basketId;
   }
 
-  async getTickets(basketId: string): Promise<Ticket[]> {
+  async getTickets(basketId: string): Promise<GetTicketsResponse> {
     const response = await apiClient.get<GetTicketsResponse>(`/orders/${basketId}/tickets`);
-    return response.data.tickets;
+    return response.data;
   }
 
   async removeTickets(basketId: string, seatIds: number[]): Promise<RemoveTicketsResponse> {
