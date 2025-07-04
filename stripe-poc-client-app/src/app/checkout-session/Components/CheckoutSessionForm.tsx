@@ -98,7 +98,8 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
       await checkout.runServerUpdate(() => api.checkoutSessions.update(basketId))
       voucherApplied();
     } catch (error) {
-      setMessage("Failed to update booking protection. Please try again later.");
+      console.error("Error applying voucher:", error);
+      setMessage("Failed to update voucher application. Please try again later.");
     }
   }
 
