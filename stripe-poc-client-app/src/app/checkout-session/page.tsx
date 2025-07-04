@@ -31,6 +31,9 @@ const CheckoutSessionPage: React.FC = () => {
       console.warn("No session created. Redirecting to seat plan.");
       setCurrentBasketId(null);
       router.push('/');
+    } else if (response.status === 'completed') {
+      console.warn("Checkout session already completed. Redirecting to order successful page.");
+      router.push(`/order-successful?session_id=${response.sessionId}`);
     } else {
       setClientSecret(response.clientSecret);
     }

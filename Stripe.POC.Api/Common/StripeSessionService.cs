@@ -9,7 +9,7 @@ using Stripe.Checkout;
 
 namespace POC.Api.Common;
 
-public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig> options, ILogger<StripeSessionService> logger)
+public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig> options)
 {
     private readonly Lazy<SessionService> _checkoutSessionService = new(() => new SessionService());
     private readonly StripeConfig _stripeConfig = options.Value;
@@ -30,7 +30,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         var session = await GetStoredSessionAsync(basketId, tickets, ct);
         if (session != null)
         {
-            return session.IsActive ? session : null;
+            return session;
         }
 
         return await CreateCheckoutSessionAsync(basketId, tickets, ct);
@@ -202,7 +202,6 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
 
     private async Task<Session> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
     {
-        logger.LogInformation("Return url: {ReturnUrl}", _stripeConfig.ReturnUrl);
         var options = new SessionCreateOptions
         {
             UiMode = "custom",

@@ -106,7 +106,7 @@ const CustomerElements: React.FC<CustomerElementsProps> = ({
                     checked={bookingProtectionValue === 'yes'}
                     onChange={handleBookingProtectionChange}
                   />
-                  £5 booking protection
+                  £5 Booking protection
                 </label>
               </div>
             </div>

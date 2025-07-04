@@ -38,9 +38,6 @@ public static class Helpers
     {
         var payment = await dbContext.Payments
             .Where(w => w.Order.BasketId == basketId)
-            .Where(w => w.Status == PaymentStatus.Created)
-            .Where(w => w.UpdatedAt == null)
-            .OrderByDescending(d => d.Id)
             .FirstOrDefaultAsync(ct);
         if (payment is null)
         {
@@ -48,7 +45,6 @@ public static class Helpers
         }
 
         payment.Status = status;
-        payment.UpdatedAt = DateTime.UtcNow;
         payment.PaymentIntentId = await dbContext.GetPaymentIntentIdAsync(basketId, ct);
         await dbContext.SaveChangesAsync(ct);
     }

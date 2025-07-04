@@ -1,6 +1,7 @@
 export interface CheckoutSessionCreateResponse {
   clientSecret: string;
   sessionId: string;
+  status: string;
 }
 
 export interface CheckoutSessionStatusResponse {

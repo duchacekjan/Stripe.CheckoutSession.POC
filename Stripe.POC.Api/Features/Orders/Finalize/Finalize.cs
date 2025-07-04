@@ -44,11 +44,7 @@ public static class Finalize
             }
 
             var service = new SessionService();
-            var options = new SessionGetOptions
-            {
-                Expand = ["payment_intent"] // This is to retrieve the payment intent if needed
-            };
-            var checkoutSession = await service.GetAsync(session.SessionId, options, cancellationToken: ct);
+            var checkoutSession = await service.GetAsync(session.SessionId, cancellationToken: ct);
             if (!ActiveStates.Contains(checkoutSession.Status))
             {
                 ValidationFailures.Add(new ValidationFailure(nameof(checkoutSession.Status),
@@ -59,22 +55,19 @@ public static class Finalize
 
             var payment = await dbContext.Payments
                 .Where(p => p.OrderId == session.OrderId)
-                .Where(p => p.Status == PaymentStatus.Created)
-                .Where(p => p.UpdatedAt == null)
-                .OrderByDescending(d => d.Id)
                 .FirstOrDefaultAsync(ct);
             if (payment == null)
             {
                 payment = new Payment
                 {
                     OrderId = session.OrderId,
-                    Status = PaymentStatus.Created,
-                    CreatedAt = DateTime.UtcNow,
                     SessionId = session.SessionId
                 };
                 dbContext.Payments.Add(payment);
-                await dbContext.SaveChangesAsync(ct);
             }
+
+            payment.Status = PaymentStatus.Created;
+            await dbContext.SaveChangesAsync(ct);
 
             // Simulate some processing delay
             //await Task.Delay(5_000, ct); 
