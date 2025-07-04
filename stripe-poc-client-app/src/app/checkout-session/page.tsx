@@ -25,6 +25,8 @@ const CheckoutSessionPage: React.FC = () => {
   const router = useRouter();
   const api = useApi();
 
+  //TODO this function solves issue with fetchClientSecret function not being 
+  // able to process rejected promises correctly
   const handleSession = (response: CheckoutSessionCreateResponse | null) => {
     console.log("Checkout session created with response:", response);
     if (response === null) {

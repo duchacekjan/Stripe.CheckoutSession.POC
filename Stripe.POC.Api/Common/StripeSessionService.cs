@@ -221,12 +221,8 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
                 }
             }
         };
-
-        //TODO Setting permissions does not work here. It is unknown value
-        //Stripe.StripeException: Received unknown parameter: permissions[update_discounts]. Did you mean update_shipping_details?
-        //Tried 48.3.0-beta.1
-        //Tried 48.3.0-beta.2
-        //Tried 48.4.0-beta.1
+        
+        //TODO When full version is out, then set in SessionPermissionOptions
         options.AddExtraParam("permissions[update_discounts]", "server_only");
 
         var session = await _checkoutSessionService.Value.CreateAsync(options, cancellationToken: ct);
