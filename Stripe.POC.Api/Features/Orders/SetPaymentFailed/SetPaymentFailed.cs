@@ -1,5 +1,5 @@
 using FastEndpoints;
-using Microsoft.EntityFrameworkCore;
+using POC.Api.Common;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
 
@@ -27,19 +27,7 @@ public static class SetPaymentFailed
         public override async Task HandleAsync(CancellationToken ct)
         {
             var basketId = Route<Guid>("BasketId");
-            var payment = await dbContext.Payments
-                .Where(w => w.Order.BasketId == basketId)
-                .Where(w => w.Status == PaymentStatus.Created)
-                .Where(w => w.UpdatedAt == null)
-                .OrderByDescending(o => o.CreatedAt)
-                .FirstOrDefaultAsync(ct);
-            if (payment is not null)
-            {
-                payment.Status = PaymentStatus.Failed;
-                payment.UpdatedAt = DateTime.UtcNow;
-                await dbContext.SaveChangesAsync(ct);
-            }
-
+            await dbContext.UpdatePaymentAsync(basketId, PaymentStatus.Failed, ct);
             await SendNoContentAsync(ct);
         }
     }

@@ -1,5 +1,6 @@
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using POC.Api.Common;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
 
@@ -42,8 +43,7 @@ public static class SetPaid
             }
 
             order.Status = OrderStatus.Paid;
-            await dbContext.SaveChangesAsync(ct);
-            await UpdatePaymentAsync(req.BasketId, ct);
+            await dbContext.UpdatePaymentAsync(req.BasketId, PaymentStatus.Succeeded, ct);
 
             var vouchers = await dbContext.Seats
                 .Where(w => w.PerformanceId == -1)
@@ -51,24 +51,6 @@ public static class SetPaid
                 .Select(s => s.Row)
                 .ToListAsync(ct);
             await SendOkAsync(new Response(vouchers), ct);
-        }
-
-        private async Task UpdatePaymentAsync(Guid basketId, CancellationToken ct)
-        {
-            var payment = await dbContext.Payments
-                .Where(p => p.Order.BasketId == basketId)
-                .Where(p => p.Status == PaymentStatus.Created)
-                .Where(p => p.UpdatedAt == null)
-                .OrderByDescending(d => d.Id)
-                .FirstOrDefaultAsync(ct);
-            if (payment == null)
-            {
-                return;
-            }
-
-            payment.Status = PaymentStatus.Succeeded;
-            payment.UpdatedAt = DateTime.UtcNow;
-            await dbContext.SaveChangesAsync(ct);
         }
     }
 }

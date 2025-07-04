@@ -9,7 +9,7 @@ namespace POC.Api.Features.Orders.Finalize;
 
 public static class Finalize
 {
-    public class Endpoint(AppDbContext dbContext, ILogger<Endpoint> logger) : EndpointWithoutRequest<EmptyResponse>
+    public class Endpoint(AppDbContext dbContext) : EndpointWithoutRequest<EmptyResponse>
     {
         private static readonly string[] ActiveStates = ["open", "pending"];
 
@@ -56,12 +56,6 @@ public static class Finalize
                 await SendErrorsAsync(cancellation: ct);
                 return;
             }
-
-            //TODO How to retrieve the payment intent?
-            //docs says https://docs.stripe.com/api/checkout/sessions/retrieve?api-version=2025-06-30.preview&lang=dotnet
-            //but Session returned does not have PaymentIntent nor PaymentIntentId filled and returns null(in version 48.4.0-beta.1, 48.3.0-beta.1, 48.3.0-beta.2)
-
-            logger.LogInformation("Session:\nPaymentIntentId:\t{PaymentIntentId}\nPaymentIntent:\t{PaymentIntent}", checkoutSession.PaymentIntentId, checkoutSession.PaymentIntent);
 
             var payment = await dbContext.Payments
                 .Where(p => p.OrderId == session.OrderId)

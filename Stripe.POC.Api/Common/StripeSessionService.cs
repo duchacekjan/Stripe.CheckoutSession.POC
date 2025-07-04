@@ -228,7 +228,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         //Tried 48.3.0-beta.1
         //Tried 48.3.0-beta.2
         //Tried 48.4.0-beta.1
-        //options.AddExtraParam("permissions[update_discounts]", "server_only");
+        options.AddExtraParam("permissions[update_discounts]", "server_only");
 
         var session = await _checkoutSessionService.Value.CreateAsync(options, cancellationToken: ct);
         return new Session(session.ClientSecret, session.Id, session.Status);
