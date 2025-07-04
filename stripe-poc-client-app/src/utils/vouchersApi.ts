@@ -2,7 +2,7 @@ import apiClient from "@/utils/axiosInstance";
 import {
   BuyVoucherRequest,
   BuyVoucherResponse,
-  RedeemVoucherRequest,
+  RedeemVoucherRequest, RemoveRedeemedVoucherRequest,
   ValidateVoucherRequest,
   ValidateVoucherResponse
 } from "@/types/Vouchers";
@@ -33,6 +33,15 @@ export class VouchersApi {
       voucherCode: code
     };
     const response = await apiClient.post<void>('/vouchers/redeem', request);
+    return response.data;
+  }
+
+  async removeRedeemed(basketId: string, code: string): Promise<void> {
+    const request: RemoveRedeemedVoucherRequest = {
+      basketId: basketId,
+      voucherCode: code
+    };
+    const response = await apiClient.delete<void>('/vouchers/remove', {data: request});
     return response.data;
   }
 }

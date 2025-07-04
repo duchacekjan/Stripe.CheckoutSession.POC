@@ -88,7 +88,21 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
   };
 
   const handleVoucherRemoved = async (voucher: Voucher) => {
+    setIsLoading(true);
+    try {
+      await api.vouchers.removeRedeemed(basketId!, voucher.code);
+      const response = await checkout.runServerUpdate(() => api.checkoutSessions.update(basketId!))
+      if (response.type !== 'success') {
+        // set error state
+        return;
+      }
 
+      const ticketsResponse = await api.orders.getBasketContent(basketId!)
+      handleTicketChanged(ticketsResponse);
+    } catch (error) {
+      console.error("Error updating redeemed vouchers:", error);
+      setIsLoading(false);
+    }
   }
 
   if (!basketTotal) {

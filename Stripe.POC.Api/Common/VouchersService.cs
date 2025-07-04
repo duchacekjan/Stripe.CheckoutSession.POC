@@ -59,6 +59,28 @@ public class VouchersService(AppDbContext dbContext)
         await dbContext.SaveChangesAsync(ct);
     }
 
+    public async Task RemoveVoucherAsync(Guid basketId, string code, CancellationToken ct)
+    {
+        var voucher = await dbContext.Vouchers
+            .Include(i => i.History).ThenInclude(i => i.Order)
+            .Where(w => w.History.Any(a => a.Order.BasketId == basketId))
+            .Where(v => v.Seat.Row == code)
+            .FirstOrDefaultAsync(ct);
+        if (voucher is null)
+        {
+            return;
+        }
+
+        var voucherRedemptionIds = await dbContext.Orders
+            .Where(w => w.BasketId == basketId)
+            .SelectMany(s => s.Vouchers.Select(v => new { Code = v.Voucher.Seat.Row, v.Id }))
+            .Where(w => w.Code == code)
+            .Select(s => s.Id)
+            .ToArrayAsync(ct);
+        voucher.RemoveVouchers(voucherRedemptionIds);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
     private async Task<ValidationResultInternal> ValidateVoucherInternalAsync(Guid basketId, string code, CancellationToken ct)
     {
         var voucher = await dbContext.Vouchers

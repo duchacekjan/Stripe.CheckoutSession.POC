@@ -25,6 +25,20 @@ public class Voucher : Entity
             Amount = amount
         });
     }
+
+    public void RemoveVouchers(params long[] ids)
+    {
+        foreach (var id in ids)
+        {
+            var historyItem = History.FirstOrDefault(h => h.Id == id);
+            if (historyItem is null)
+            {
+                continue;
+            }
+
+            History.Remove(historyItem);
+        }
+    }
 }
 
 public class VoucherEntityConfiguration : IEntityTypeConfiguration<Voucher>

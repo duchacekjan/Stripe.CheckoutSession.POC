@@ -73,7 +73,7 @@ const VoucherCard: React.FC<{
           fontWeight: 'bold',
           fontSize: '12pt',
           color: '#22c55e'
-        }}>-£{voucher.amount}</span>
+        }}>- £{voucher.amount}</span>
       </div>
     </div>
 

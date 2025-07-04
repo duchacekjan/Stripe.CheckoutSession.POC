@@ -7,7 +7,7 @@ export interface BuyVoucherResponse {
   basketId: string;
 }
 
-export interface ValidateVoucherRequest{
+export interface ValidateVoucherRequest {
   basketId: string;
   voucherCode: string;
 }
@@ -18,7 +18,12 @@ export interface ValidateVoucherResponse {
   discount?: number;
 }
 
-export interface RedeemVoucherRequest{
+export interface RedeemVoucherRequest {
+  basketId: string;
+  voucherCode: string;
+}
+
+export interface RemoveRedeemedVoucherRequest {
   basketId: string;
   voucherCode: string;
 }
