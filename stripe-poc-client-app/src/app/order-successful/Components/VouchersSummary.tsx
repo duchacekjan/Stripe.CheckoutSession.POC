@@ -6,8 +6,7 @@ const VouchersSummary: React.FC<{ voucherCodes: string[] }> = ({voucherCodes}) =
       flexDirection: "column",
     }}>
       <div style={{
-        display: 'flex',
-        width: '280px',
+        display: 'flex'
       }}>
         <div style={{
           marginTop: '8px',

@@ -27,7 +27,12 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
             return null;
         }
 
-        var session = await GetStoredSessionAsync(basketId, tickets, ct);
+        var vouchers = await dbContext.Orders
+            .Where(w => w.BasketId == basketId)
+            .SelectMany(s => s.Vouchers.Select(v => new VoucherDTO(v.Id, v.Voucher.Seat.Row, v.Amount)))
+            .ToListAsync(ct);
+
+        var session = await GetStoredSessionAsync(basketId, tickets, vouchers, ct);
         if (session != null)
         {
             return session;
@@ -36,7 +41,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         return await CreateCheckoutSessionAsync(basketId, tickets, ct);
     }
 
-    private async Task<Session?> GetStoredSessionAsync(Guid basketId, Dictionary<long, List<TicketDTO>> tickets, CancellationToken ct)
+    private async Task<Session?> GetStoredSessionAsync(Guid basketId, Dictionary<long, List<TicketDTO>> tickets, List<VoucherDTO> vouchers, CancellationToken ct)
     {
         var data = await dbContext.CheckoutSessions
             .Where(w => w.Order.BasketId == basketId)
@@ -54,7 +59,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
             return session;
         }
 
-        session = await UpdateSessionAsync(session, tickets, ct);
+        session = await UpdateSessionAsync(session, tickets, vouchers, ct);
 
         return session;
     }
@@ -78,7 +83,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         }
     }
 
-    private async Task<Session> UpdateSessionAsync(Session session, Dictionary<long, List<TicketDTO>> tickets, CancellationToken ct)
+    private async Task<Session> UpdateSessionAsync(Session session, Dictionary<long, List<TicketDTO>> tickets, List<VoucherDTO> vouchers, CancellationToken ct)
     {
         var updatedItems = await GetLineItemsForUpdateAsync(session.SessionId, tickets, ct);
 
@@ -91,6 +96,17 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
         {
             LineItems = updatedItems
         };
+
+        if (vouchers.Count > 0)
+        {
+            // var totalDiscount = vouchers.Sum(s => s.Amount);
+            // updateOptions.AddExtraParam("coupon_data", new CouponData
+            // {
+            //     Name = "Voucher Discount",
+            //     AmountOff = (long)totalDiscount * 100,
+            //     Currency = "gbp",
+            // });
+        }
 
         var checkoutSession = await _checkoutSessionService.Value.UpdateAsync(session.SessionId, updateOptions, cancellationToken: ct);
         return new Session(checkoutSession.ClientSecret, checkoutSession.Id, checkoutSession.Status);
@@ -221,7 +237,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
                 }
             }
         };
-        
+
         //TODO When full version is out, then set in SessionPermissionOptions
         options.AddExtraParam("permissions[update_discounts]", "server_only");
 
