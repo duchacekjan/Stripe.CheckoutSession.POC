@@ -18,6 +18,7 @@ export interface AddSeatsToOrderResponse {
 
 export interface GetTicketsResponse {
   tickets: Record<number, Ticket[]>;
+  vouchers: Voucher[];
   totalPrice: number;
 }
 
@@ -74,4 +75,10 @@ export interface Ticket {
   seatId: number;
   seatRow: string;
   seatNumber: number;
+}
+
+export interface Voucher {
+  id: number;
+  code: string;
+  amount: number;
 }

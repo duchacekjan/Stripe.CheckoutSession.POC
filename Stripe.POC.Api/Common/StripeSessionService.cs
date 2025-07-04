@@ -21,7 +21,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
 
     public async Task<Session?> GetOrCreateAsync(Guid basketId, CancellationToken ct)
     {
-        var tickets = await dbContext.OrderTickets2Async(basketId, ct);
+        var tickets = await dbContext.OrderTicketsAsync(basketId, ct);
         if (tickets.Count == 0)
         {
             return null;

@@ -12,6 +12,7 @@ public class Order : Entity
 
     public ICollection<Payment> Payments { get; set; } = [];
     public CheckoutSession CheckoutSession { get; set; } = null!;
+    public ICollection<VoucherHistory> Vouchers { get; set; } = [];
 }
 
 public enum OrderStatus

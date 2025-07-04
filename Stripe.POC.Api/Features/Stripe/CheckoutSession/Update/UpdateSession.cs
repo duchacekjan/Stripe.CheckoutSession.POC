@@ -5,7 +5,7 @@ namespace POC.Api.Features.Stripe.CheckoutSession.Update;
 
 public static class UpdateSession
 {
-    public record Request(Guid BasketId);
+    public record Request(Guid BasketId, string? VoucherCode = null);
 
     public class Endpoint(StripeSessionService stripeSessionService) : Endpoint<Request, EmptyResponse>
     {

@@ -25,8 +25,8 @@ export class OrdersApi {
     return response.data.basketId;
   }
 
-  async getTickets(basketId: string): Promise<GetTicketsResponse> {
-    const response = await apiClient.get<GetTicketsResponse>(`/orders/${basketId}/tickets`);
+  async getBasketContent(basketId: string): Promise<GetTicketsResponse> {
+    const response = await apiClient.get<GetTicketsResponse>(`/orders/${basketId}/content`);
     return response.data;
   }
 

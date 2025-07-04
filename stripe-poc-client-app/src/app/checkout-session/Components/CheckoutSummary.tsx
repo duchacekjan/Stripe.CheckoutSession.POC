@@ -33,7 +33,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     if (currentBasketId) {
       setBasketId(currentBasketId);
       setIsLoading(true);
-      api.orders.getTickets(currentBasketId)
+      api.orders.getBasketContent(currentBasketId)
         .then(response => {
           handleTicketChanged(response);
         })
@@ -73,7 +73,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
         return;
       }
 
-      const ticketsResponse = await api.orders.getTickets(basketId!)
+      const ticketsResponse = await api.orders.getBasketContent(basketId!)
       handleTicketChanged(ticketsResponse);
     } catch (error) {
       console.error("Error updating tickets:", error);

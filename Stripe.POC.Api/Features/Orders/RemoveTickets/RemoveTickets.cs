@@ -51,7 +51,7 @@ public static class RemoveTickets
             }
 
             await RemoveTicketsFromOrder(req.BasketId, req.SeatIds, ct);
-            var tickets = await dbContext.OrderTickets2Async(req.BasketId, ct);
+            var tickets = await dbContext.OrderTicketsAsync(req.BasketId, ct);
             var remainingTickets = tickets
                 .Any(w => w.Value.Count > 0);
             var status = remainingTickets ? UpdateStatus.Updated : UpdateStatus.Emptied;
