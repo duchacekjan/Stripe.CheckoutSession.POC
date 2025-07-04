@@ -4,7 +4,7 @@ import {Ticket} from "@/types/Orders";
 
 const GroupedTicket: React.FC<{
   tickets: Ticket[],
-  ticketsRemoved: (seat: Ticket[]) => void,
+  ticketsRemoved: (ticket: Ticket[]) => void,
 }> = ({tickets, ticketsRemoved}) => {
   const info = tickets.length > 0 ? tickets[0] : null;
   if (!info) {
@@ -164,7 +164,7 @@ const GroupedTicket: React.FC<{
         <span style={{
           fontWeight: 'bold',
           fontSize: '12pt'
-        }}>£ {info.price}</span>
+        }}>£{info.price}</span>
       </div>
     </div>
 

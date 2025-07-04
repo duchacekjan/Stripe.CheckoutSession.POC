@@ -1,5 +1,11 @@
 import apiClient from "@/utils/axiosInstance";
-import {BuyVoucherRequest, BuyVoucherResponse, ValidateVoucherRequest, ValidateVoucherResponse} from "@/types/Vouchers";
+import {
+  BuyVoucherRequest,
+  BuyVoucherResponse,
+  RedeemVoucherRequest,
+  ValidateVoucherRequest,
+  ValidateVoucherResponse
+} from "@/types/Vouchers";
 
 export class VouchersApi {
 
@@ -18,6 +24,15 @@ export class VouchersApi {
       voucherCode: code
     };
     const response = await apiClient.post<ValidateVoucherResponse>('/vouchers/validate', request);
+    return response.data;
+  }
+
+  async redeem(basketId: string, code: string): Promise<void> {
+    const request: RedeemVoucherRequest = {
+      basketId: basketId,
+      voucherCode: code
+    };
+    const response = await apiClient.post<void>('/vouchers/redeem', request);
     return response.data;
   }
 }

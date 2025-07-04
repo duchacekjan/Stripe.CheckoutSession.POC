@@ -14,6 +14,7 @@ interface CheckoutSessionFormProps {
   setBookingProtection: (protection: boolean) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  voucherApplied: () => void;
 }
 
 const validateEmail = async (email: string, checkout: CheckoutContextValue) => {
@@ -30,7 +31,8 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
                                                                    bookingProtection,
                                                                    setBookingProtection,
                                                                    isLoading,
-                                                                   setIsLoading
+                                                                   setIsLoading,
+                                                                   voucherApplied
                                                                  }) => {
   const api = useApi();
   const [email, setEmail] = useState<string>('jan.duchacek@itixo.com');
@@ -91,6 +93,15 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
     }
   }
 
+  const handleVoucherApplied = async () => {
+    try {
+      await checkout.runServerUpdate(() => api.checkoutSessions.update(basketId))
+      voucherApplied();
+    } catch (error) {
+      setMessage("Failed to update booking protection. Please try again later.");
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <div style={{
@@ -110,6 +121,7 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
         />
         <VoucherInput
           hasVoucher={hasVoucher}
+          voucherApplied={handleVoucherApplied}
         />
         <h4>Payment</h4>
         <PaymentElement id="payment-element"/>

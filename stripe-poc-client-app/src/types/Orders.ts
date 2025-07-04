@@ -18,7 +18,7 @@ export interface AddSeatsToOrderResponse {
 
 export interface GetTicketsResponse {
   tickets: Record<number, Ticket[]>;
-  vouchers: Voucher[];
+  redeemedVouchers: Voucher[];
   totalPrice: number;
 }
 

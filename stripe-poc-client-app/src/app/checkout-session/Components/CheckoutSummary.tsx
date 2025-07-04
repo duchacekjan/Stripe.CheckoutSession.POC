@@ -2,15 +2,16 @@
 
 import React, {useEffect, useState} from "react";
 import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
-import {GetTicketsResponse, Ticket, UpdateStatus} from "@/types/Orders";
+import {GetTicketsResponse, Ticket, UpdateStatus, Voucher} from "@/types/Orders";
 import GroupedTicket from "@/app/checkout-session/Components/GroupedTicket";
 import {useCheckout} from "@stripe/react-stripe-js";
 import {useRouter} from "next/navigation";
 import {useApi} from "@/utils/api";
+import VoucherCard from "@/app/checkout-session/Components/VoucherCard";
 
 interface CheckoutSummaryProps {
   setHasPerformance: (hasPerformance: boolean) => void;
-  bookingProtection: boolean;
+  refreshContent: number;
   setBookingProtection: (protection: boolean) => void;
   setIsLoading: (loading: boolean) => void;
   setHasVoucher: (hasVoucher: boolean) => void;
@@ -18,7 +19,7 @@ interface CheckoutSummaryProps {
 
 const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
                                                            setHasPerformance,
-                                                           bookingProtection,
+                                                           refreshContent,
                                                            setBookingProtection,
                                                            setIsLoading,
                                                            setHasVoucher
@@ -28,6 +29,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
   const api = useApi();
   const [basketId, setBasketId] = useState<string | null>(null);
   const [tickets, setTickets] = useState<Record<number, Ticket[]>>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [basketTotal, setBasketTotal] = useState<string>('');
 
   useEffect(() => {
@@ -48,10 +50,11 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       console.log("No basket ID found. Redirecting to seat plan.");
       setIsLoading(false);
     }
-  }, [bookingProtection]);
+  }, [refreshContent]);
 
   const handleTicketChanged = (response: GetTicketsResponse) => {
     setTickets(response.tickets);
+    setVouchers(response.redeemedVouchers ?? []);
     setBasketTotal(response.totalPrice.toFixed(2))
     const allTickets = Object.values(response.tickets).flat();
     setHasPerformance(allTickets.some(ticket => ticket.performanceId > 0));
@@ -83,6 +86,10 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       setIsLoading(false);
     }
   };
+
+  const handleVoucherRemoved = async (voucher: Voucher) => {
+
+  }
 
   if (!basketTotal) {
     return null;
@@ -117,6 +124,10 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
             <GroupedTicket tickets={orderItemTickets}
                            key={`${orderItemTickets[0].performanceId}-${orderItemTickets[0].priceId}-${index}`}
                            ticketsRemoved={removedTickets => handleRemovedTicket(removedTickets.map(s => s.seatId))}/>
+          ))}
+          {vouchers.map((voucher) => (
+            <VoucherCard voucher={voucher}
+                         voucherRemoved={handleVoucherRemoved}/>
           ))}
         </div>
         <div style={{

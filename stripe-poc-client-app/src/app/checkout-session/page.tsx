@@ -23,6 +23,7 @@ const CheckoutSessionPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loadingQueue, setLoadingQueue] = useState<boolean[]>([]);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [refreshContent, setRefreshContent] = useState<number>(0);
   const router = useRouter();
   const api = useApi();
 
@@ -71,7 +72,12 @@ const CheckoutSessionPage: React.FC = () => {
 
   const handleChangeBookingProtection = (protection: boolean) => {
     console.log("PAGE => booking protection to:", protection);
-    setBookingProtection(protection)
+    setBookingProtection(prev => {
+      if (prev !== protection) {
+        triggerRefreshContent();
+      }
+      return protection
+    })
   }
 
   const handleShopMore = () => {
@@ -91,6 +97,10 @@ const CheckoutSessionPage: React.FC = () => {
     }
     setLoadingQueue(newQueue);
     setIsLoading(newQueue.length > 0);
+  }
+
+  const triggerRefreshContent = () => {
+    setRefreshContent(prevState => prevState + 1);
   }
 
   return (
@@ -230,10 +240,11 @@ const CheckoutSessionPage: React.FC = () => {
                     setBookingProtection={handleChangeBookingProtection}
                     isLoading={isLoading}
                     setIsLoading={handleLoadingQueue}
+                    voucherApplied={triggerRefreshContent}
                   />
                   <CheckoutSummary
                     setHasPerformance={setHasPerformance}
-                    bookingProtection={bookingProtection}
+                    refreshContent={refreshContent}
                     setBookingProtection={handleChangeBookingProtection}
                     setIsLoading={handleLoadingQueue}
                     setHasVoucher={setHasVoucher}/>

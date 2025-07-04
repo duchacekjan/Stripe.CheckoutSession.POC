@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using POC.Api.Features.Inventory.Seed;
 using POC.Api.Persistence;
@@ -38,17 +39,50 @@ public class VouchersService(AppDbContext dbContext)
 
     public async Task<ValidationResult> ValidateVoucherAsync(Guid basketId, string code, CancellationToken ct)
     {
+        var result = await ValidateVoucherInternalAsync(basketId, code, ct);
+        return result.Result;
+    }
+
+    public async Task RedeemVoucherAsync(Guid basketId, string code, CancellationToken ct)
+    {
+        var result = await ValidateVoucherInternalAsync(basketId, code, ct);
+        if (!result.IsValid)
+        {
+            throw new InvalidOperationException(result.Result.ErrorMessage ?? "Invalid voucher");
+        }
+
         var voucher = await dbContext.Vouchers
+            .Include(i => i.History)
+            .Where(v => v.Id == result.VoucherId)
+            .FirstAsync(ct);
+        voucher.RedeemAmount(result.OrderId.Value, result.Result.Discount!.Value);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    private async Task<ValidationResultInternal> ValidateVoucherInternalAsync(Guid basketId, string code, CancellationToken ct)
+    {
+        var voucher = await dbContext.Vouchers
+            .Include(i => i.History)
+            .AsNoTracking()
             .Where(v => v.Seat.Row == code)
+            .FirstOrDefaultAsync(ct);
+        var orderId = await dbContext.Orders
+            .Where(o => o.BasketId == basketId)
+            .Select(o => (long?)o.Id)
             .FirstOrDefaultAsync(ct);
         if (voucher is null)
         {
-            return ValidationResult.Invalid("Voucher not found");
+            return ValidationResultInternal.Invalid("Voucher not found");
+        }
+
+        if (orderId is null)
+        {
+            return ValidationResultInternal.Invalid("Order not found for the provided basket ID");
         }
 
         if (voucher.RemainingAmount <= 0)
         {
-            return ValidationResult.Valid(voucher.RemainingAmount);
+            return ValidationResultInternal.Invalid($"Voucher has insufficient funds (£{voucher.RemainingAmount:N2})");
         }
 
         var itemsTotal = await dbContext.OrderItems
@@ -66,16 +100,7 @@ public class VouchersService(AppDbContext dbContext)
             ? totalPrice
             : voucher.RemainingAmount;
 
-        return ValidationResult.Valid(discount);
-    }
-
-    public async Task RedeemVoucherAsync(Guid basketId, string code, CancellationToken ct)
-    {
-        // Logic to redeem the voucher
-    }
-
-    private async Task CreateVoucher(long orderId, long priceId, CancellationToken ct)
-    {
+        return ValidationResultInternal.Valid(voucher.Id, orderId.Value, discount);
     }
 
     private async Task<long> EnsureOrderItemCreated(long orderId, long priceId, CancellationToken cancellationToken)
@@ -118,15 +143,39 @@ public class VouchersService(AppDbContext dbContext)
         return entity.Id;
     }
 
+    private class ValidationResultInternal
+    {
+        private ValidationResultInternal(ValidationResult result)
+        {
+            Result = result;
+        }
+
+        public long? VoucherId { get; init; }
+        public long? OrderId { get; init; }
+
+        public ValidationResult Result { get; }
+
+        [MemberNotNullWhen(true, nameof(VoucherId))]
+        [MemberNotNullWhen(true, nameof(OrderId))]
+        public bool IsValid => Result.IsValid;
+
+        public static ValidationResultInternal Valid(long voucherId, long orderId, decimal discount)
+            => new(ValidationResult.Valid(discount)) { VoucherId = voucherId, OrderId = orderId };
+
+        public static ValidationResultInternal Invalid(string errorMessage)
+            => new(ValidationResult.Invalid(errorMessage)) { VoucherId = null };
+    }
+
     public class ValidationResult
     {
         private ValidationResult()
         {
         }
 
+        [MemberNotNullWhen(true, nameof(Discount))]
         public bool IsValid => Discount.HasValue;
-        public decimal? Discount { get; init; }
 
+        public decimal? Discount { get; init; }
         public string? ErrorMessage { get; init; }
 
         public static ValidationResult Valid(decimal? discount = null)

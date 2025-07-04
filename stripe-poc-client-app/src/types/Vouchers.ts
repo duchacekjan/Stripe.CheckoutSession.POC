@@ -17,3 +17,8 @@ export interface ValidateVoucherResponse {
   message?: string;
   discount?: number;
 }
+
+export interface RedeemVoucherRequest{
+  basketId: string;
+  voucherCode: string;
+}

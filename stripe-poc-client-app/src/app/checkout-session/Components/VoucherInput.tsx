@@ -3,13 +3,16 @@
 import {useEffect, useState} from "react";
 import {useApi} from "@/utils/api";
 import {getCurrentBasketId} from "@/utils/basketIdProvider";
+import axios from "axios";
 
 interface VoucherInputProps {
   hasVoucher: boolean;
+  voucherApplied: () => void;
 }
 
 const VoucherInput: React.FC<VoucherInputProps> = ({
-                                                     hasVoucher
+                                                     hasVoucher,
+                                                     voucherApplied
                                                    }) => {
   const api = useApi();
   const [error, setError] = useState<string | null>(null);
@@ -25,25 +28,38 @@ const VoucherInput: React.FC<VoucherInputProps> = ({
       console.warn("No basket ID found. Voucher input will not be displayed.");
     }
   }, []);
-  const handleBlur = async () => {
-    if (!code) {
-      return;
-    }
-
-    const response = await api.vouchers.validate(basketId!, code);
-    if (!response.isValid) {
-      setError(response.message || "Invalid voucher code");
-    } else {
-      //TODO Redeem voucher
-      setSuccess("Voucher applied successfully!");
-    }
-  };
 
   const handleChange = (e: any) => {
     setError(null);
     setSuccess(null);
     setCode(e.target.value);
   };
+
+  const handleApply = async () => {
+    setError(null);
+    setSuccess(null);
+
+    if (!code) {
+      return;
+    }
+
+    try {
+      const response = await api.vouchers.validate(basketId!, code);
+      if (!response.isValid) {
+        setError(response.message || "Invalid voucher code");
+      } else {
+        await api.vouchers.redeem(basketId!, code);
+        setSuccess("Voucher applied successfully!");
+        voucherApplied();
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setError(`Failed to apply voucher: ${error.response?.data?.message || error.message}`);
+      } else {
+        setError(`Failed to apply voucher: ${error}`);
+      }
+    }
+  }
 
   if (hasVoucher || !basketId) {
     return null;
@@ -68,12 +84,12 @@ const VoucherInput: React.FC<VoucherInputProps> = ({
             type="text"
             value={code}
             onChange={handleChange}
-            onBlur={handleBlur}
             height="100%"
             style={{fontSize: '12pt', flexGrow: 1, borderRadius: '4px', border: '1px solid #e5e7eb', padding: '4px'}}
             placeholder="Enter your promo code"
           />
-          <button type={ "button"}>
+          <button type={"button"}
+                  onClick={handleApply}>
             Apply
           </button>
         </div>
