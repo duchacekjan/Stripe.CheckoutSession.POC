@@ -2,11 +2,13 @@ import {CheckoutSessionApi} from "@/utils/checkoutSessionApi";
 import { useRef } from "react";
 import {InventoryApi} from "@/utils/inventoryApi";
 import {OrdersApi} from "@/utils/ordersApi";
+import {VouchersApi} from "@/utils/vouchersApi";
 
 export class ApiClient {
   checkoutSessions: CheckoutSessionApi = new CheckoutSessionApi();
   inventory: InventoryApi = new InventoryApi();
   orders: OrdersApi = new OrdersApi();
+  vouchers: VouchersApi = new VouchersApi();
 }
 
 // Singleton instance

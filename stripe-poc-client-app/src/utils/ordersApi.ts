@@ -38,15 +38,6 @@ export class OrdersApi {
     return response.data;
   }
 
-  async buyVoucher(price: number, basketId?: string): Promise<string> {
-    const request = {
-      price: price,
-      basketId: basketId
-    };
-    const response = await apiClient.post<BuyVoucherResponse>('/vouchers/buy', request);
-    return response.data.basketId;
-  }
-
   async setPaid(basketId: string): Promise<string[]> {
     const response = await apiClient.post<SetPaidResponse>(`/orders/${basketId}/set-paid`, null);
     return response.data.voucherCodes;

@@ -36,10 +36,37 @@ public class VouchersService(AppDbContext dbContext)
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public async Task<bool> ValidateVoucherAsync(Guid basketId, string code, CancellationToken ct)
+    public async Task<ValidationResult> ValidateVoucherAsync(Guid basketId, string code, CancellationToken ct)
     {
-        // Logic to validate the voucher
-        return true; // Placeholder for actual validation logic
+        var voucher = await dbContext.Vouchers
+            .Where(v => v.Seat.Row == code)
+            .FirstOrDefaultAsync(ct);
+        if (voucher is null)
+        {
+            return ValidationResult.Invalid("Voucher not found");
+        }
+
+        if (voucher.RemainingAmount <= 0)
+        {
+            return ValidationResult.Valid(voucher.RemainingAmount);
+        }
+
+        var itemsTotal = await dbContext.OrderItems
+            .Where(w => w.Order.BasketId == basketId)
+            .Select(s => s.Seats.Sum(seat => seat.Price.Amount))
+            .SumAsync(ct);
+        var vouchersTotal = await dbContext.Orders
+            .Where(w => w.BasketId == basketId)
+            .SelectMany(s => s.Vouchers.Select(v => v.Amount))
+            .SumAsync(ct);
+
+        var totalPrice = itemsTotal - vouchersTotal;
+
+        var discount = voucher.RemainingAmount > totalPrice
+            ? totalPrice
+            : voucher.RemainingAmount;
+
+        return ValidationResult.Valid(discount);
     }
 
     public async Task RedeemVoucherAsync(Guid basketId, string code, CancellationToken ct)
@@ -89,5 +116,23 @@ public class VouchersService(AppDbContext dbContext)
         var entity = dbContext.Prices.Add(newPrice).Entity;
         await dbContext.SaveChangesAsync(cancellationToken);
         return entity.Id;
+    }
+
+    public class ValidationResult
+    {
+        private ValidationResult()
+        {
+        }
+
+        public bool IsValid => Discount.HasValue;
+        public decimal? Discount { get; init; }
+
+        public string? ErrorMessage { get; init; }
+
+        public static ValidationResult Valid(decimal? discount = null)
+            => new() { Discount = discount };
+
+        public static ValidationResult Invalid(string errorMessage)
+            => new() { ErrorMessage = errorMessage };
     }
 }

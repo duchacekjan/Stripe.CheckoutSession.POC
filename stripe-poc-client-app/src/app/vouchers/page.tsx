@@ -22,14 +22,14 @@ const Vouchers: React.FC = () => {
 
   const handleAddToCart = async () => {
     try {
-      const responseBasketId = await api.orders.buyVoucher(voucherValue, basketId ?? undefined);
+      const responseBasketId = await api.vouchers.buy(voucherValue, basketId ?? undefined);
       setCurrentBasketId(responseBasketId);
       router.push('/checkout-session');
     } catch (error) {
       console.error("Error adding voucher to cart:", error);
     }
   };
-  
+
   const handleSeatPlan = () => {
     router.push('/');
   };
