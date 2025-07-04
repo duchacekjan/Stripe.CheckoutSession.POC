@@ -1,11 +1,12 @@
 "use client";
 import {useEffect, useState} from 'react';
 import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
-import {buyVoucher} from "@/utils/api";
 import {useRouter} from "next/navigation";
+import {useApi} from "@/utils/api";
 
 const Vouchers: React.FC = () => {
   const router = useRouter();
+  const api = useApi();
   const [voucherValue, setVoucherValue] = useState<number>(160);
   const [basketId, setBasketId] = useState<string | null>(null);
 
@@ -21,14 +22,14 @@ const Vouchers: React.FC = () => {
 
   const handleAddToCart = async () => {
     try {
-      const response = await buyVoucher(voucherValue, basketId ?? undefined);
-      setCurrentBasketId(response.basketId);
+      const responseBasketId = await api.vouchers.buy(voucherValue, basketId ?? undefined);
+      setCurrentBasketId(responseBasketId);
       router.push('/checkout-session');
     } catch (error) {
       console.error("Error adding voucher to cart:", error);
     }
   };
-  
+
   const handleSeatPlan = () => {
     router.push('/');
   };
@@ -83,7 +84,7 @@ const Vouchers: React.FC = () => {
       </div>
       <div style={{padding: '20px', display: 'flex', gap: '8px'}}>
         <button onClick={handleAddToCart}>Add to cart</button>
-        <button onClick={handleSeatPlan}>Seat plan</button>
+        <button onClick={handleSeatPlan}>Seat selection</button>
         <button onClick={handleBasket} disabled={!basketId}>Basket</button>
       </div>
     </div>

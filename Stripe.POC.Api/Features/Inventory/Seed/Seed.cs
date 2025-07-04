@@ -7,6 +7,38 @@ namespace POC.Api.Features.Inventory.Seed;
 
 public static class Seed
 {
+    public const long BookingProtectionPriceId = -1;
+
+    public static readonly Event Voucher = new()
+    {
+        Id = -1,
+        Name = "Voucher",
+        Performances = new List<Performance>
+        {
+            new()
+            {
+                Id = -1,
+                PerformanceDate = DateTime.MaxValue,
+                DurationMinutes = 1
+            }
+        }
+    };
+
+    public static readonly Event BookingProtection = new()
+    {
+        Id = -2,
+        Name = "Booking Protection",
+        Performances = new List<Performance>
+        {
+            new()
+            {
+                Id = -2,
+                PerformanceDate = DateTime.MaxValue,
+                DurationMinutes = 1
+            }
+        }
+    };
+
     public class Endpoint(AppDbContext dbContext) : EndpointWithoutRequest<EmptyResponse>
     {
         public override void Configure()
@@ -28,7 +60,7 @@ public static class Seed
         public override async Task HandleAsync(CancellationToken ct)
         {
             await dbContext.Database.EnsureDeletedAsync(ct);
-            await dbContext.Database.EnsureCreatedAsync(ct);
+            await dbContext.Database.MigrateAsync(ct);
 
             dbContext.Prices.AddRange(PriceSeed);
             await dbContext.SaveChangesAsync(ct);
@@ -68,7 +100,7 @@ public static class Seed
         {
             var row = Row.Start;
             var result = new List<Seat>();
-            foreach (var price in PriceSeed)
+            foreach (var price in PriceSeed.Where(w => w.Id > 0).OrderBy(x => Random.Shared.Next()))
             {
                 result.AddRange(GenerateRowOfSeatsForPrice(performanceId, row, price, seatsPerRow));
                 row++;
@@ -105,39 +137,28 @@ public static class Seed
         private static IEnumerable<Event> EventsSeed()
         {
             var rnd = new Random();
-            yield return new Event
-            {
-                Id = -1,
-                Name = "Voucher",
-                Performances = new List<Performance>
-                {
-                    new()
-                    {
-                        Id = -1,
-                        PerformanceDate = DateTime.MaxValue,
-                        DurationMinutes = 1
-                    }
-                }
-            };
+            yield return Voucher;
+            yield return BookingProtection;
             foreach (var pair in EventDictionary)
             {
                 yield return new Event
                 {
                     Id = pair.Key,
                     Name = pair.Value,
-                    Performances = GeneratePerformances(pair.Key, rnd.Next(5, 20), (uint)rnd.Next(60, 180)).ToList()
+                    Performances = GeneratePerformances(pair.Key, rnd.Next(5, 20), (uint)rnd.Next(90, 180)).ToList()
                 };
             }
         }
 
         private static List<Price> PriceSeed =>
         [
+            new() { Id = BookingProtectionPriceId, Name = "Booking Protection", Amount = 5.00m },
             new() { Id = 1, Name = "Standard", Amount = 50.00m },
             new() { Id = 2, Name = "VIP", Amount = 100.00m },
             new() { Id = 3, Name = "Balcony", Amount = 75.00m },
             new() { Id = 4, Name = "Box", Amount = 150.00m },
             new() { Id = 5, Name = "Student Discount", Amount = 30.00m },
-            new() { Id = 6, Name = "Obstructed View", Amount = 30.00m }
+            new() { Id = 6, Name = "Obstructed View", Amount = 25.00m },
         ];
 
         public class Row

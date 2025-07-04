@@ -23,6 +23,11 @@ namespace POC.Api.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ClientSecret")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("OrderId")
                         .HasColumnType("INTEGER");
 
@@ -36,7 +41,7 @@ namespace POC.Api.Persistence.Migrations
                     b.HasIndex("OrderId")
                         .IsUnique();
 
-                    b.ToTable("CheckoutSessions");
+                    b.ToTable("CheckoutSessions", (string)null);
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.Event", b =>
@@ -52,7 +57,7 @@ namespace POC.Api.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Events");
+                    b.ToTable("Events", (string)null);
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.Order", b =>
@@ -72,7 +77,7 @@ namespace POC.Api.Persistence.Migrations
                     b.HasIndex("BasketId")
                         .IsUnique();
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.OrderItem", b =>
@@ -88,7 +93,69 @@ namespace POC.Api.Persistence.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", (string)null);
+                });
+
+            modelBuilder.Entity("POC.Api.Persistence.Entities.Payment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PaymentIntentId")
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique();
+
+                    b.ToTable("Payments", (string)null);
+                });
+
+            modelBuilder.Entity("POC.Api.Persistence.Entities.PaymentHistory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NewStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OldStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("PaymentId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("PaymentHistories", (string)null);
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.Performance", b =>
@@ -110,7 +177,7 @@ namespace POC.Api.Persistence.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("Performances");
+                    b.ToTable("Performances", (string)null);
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.Price", b =>
@@ -130,7 +197,7 @@ namespace POC.Api.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Prices");
+                    b.ToTable("Prices", (string)null);
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.Seat", b =>
@@ -164,7 +231,51 @@ namespace POC.Api.Persistence.Migrations
 
                     b.HasIndex("PriceId");
 
-                    b.ToTable("Seats");
+                    b.ToTable("Seats", (string)null);
+                });
+
+            modelBuilder.Entity("POC.Api.Persistence.Entities.Voucher", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("InitialAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("SeatId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeatId")
+                        .IsUnique();
+
+                    b.ToTable("Vouchers", (string)null);
+                });
+
+            modelBuilder.Entity("POC.Api.Persistence.Entities.VoucherHistory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("VoucherId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("VoucherId");
+
+                    b.ToTable("VoucherHistories", (string)null);
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.CheckoutSession", b =>
@@ -187,6 +298,28 @@ namespace POC.Api.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("POC.Api.Persistence.Entities.Payment", b =>
+                {
+                    b.HasOne("POC.Api.Persistence.Entities.Order", "Order")
+                        .WithMany("Payments")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("POC.Api.Persistence.Entities.PaymentHistory", b =>
+                {
+                    b.HasOne("POC.Api.Persistence.Entities.Payment", "Payment")
+                        .WithMany("History")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.Performance", b =>
@@ -225,6 +358,36 @@ namespace POC.Api.Persistence.Migrations
                     b.Navigation("Price");
                 });
 
+            modelBuilder.Entity("POC.Api.Persistence.Entities.Voucher", b =>
+                {
+                    b.HasOne("POC.Api.Persistence.Entities.Seat", "Seat")
+                        .WithOne()
+                        .HasForeignKey("POC.Api.Persistence.Entities.Voucher", "SeatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Seat");
+                });
+
+            modelBuilder.Entity("POC.Api.Persistence.Entities.VoucherHistory", b =>
+                {
+                    b.HasOne("POC.Api.Persistence.Entities.Order", "Order")
+                        .WithMany("Vouchers")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("POC.Api.Persistence.Entities.Voucher", "Voucher")
+                        .WithMany("History")
+                        .HasForeignKey("VoucherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Voucher");
+                });
+
             modelBuilder.Entity("POC.Api.Persistence.Entities.Event", b =>
                 {
                     b.Navigation("Performances");
@@ -236,6 +399,10 @@ namespace POC.Api.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("OrderItems");
+
+                    b.Navigation("Payments");
+
+                    b.Navigation("Vouchers");
                 });
 
             modelBuilder.Entity("POC.Api.Persistence.Entities.OrderItem", b =>
@@ -243,9 +410,19 @@ namespace POC.Api.Persistence.Migrations
                     b.Navigation("Seats");
                 });
 
+            modelBuilder.Entity("POC.Api.Persistence.Entities.Payment", b =>
+                {
+                    b.Navigation("History");
+                });
+
             modelBuilder.Entity("POC.Api.Persistence.Entities.Performance", b =>
                 {
                     b.Navigation("Seats");
+                });
+
+            modelBuilder.Entity("POC.Api.Persistence.Entities.Voucher", b =>
+                {
+                    b.Navigation("History");
                 });
 #pragma warning restore 612, 618
         }

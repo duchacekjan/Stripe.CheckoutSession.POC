@@ -38,7 +38,7 @@ public static class GetSeats
                 .OrderBy(o => o.PriceId)
                 .ThenBy(o => o.Row)
                 .ThenBy(o => o.Number)
-                .Select(s => new SeatListDTO(s.Id, s.Row, s.Number, s.PriceId, s.Price.Amount, s.OrderItemId == null))
+                .Select(s => new SeatListDTO(s.Id, s.Row, s.Number, s.PriceId, s.Price.Amount, s.OrderItemId == null, s.Price.Name))
                 .ToListAsync(ct);
             await SendAsync(new Response(seats), cancellation: ct);
         }

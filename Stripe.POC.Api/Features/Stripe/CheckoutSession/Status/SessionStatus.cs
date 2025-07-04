@@ -1,4 +1,6 @@
 using FastEndpoints;
+using Microsoft.EntityFrameworkCore;
+using POC.Api.Persistence;
 using Stripe.Checkout;
 
 namespace POC.Api.Features.Stripe.CheckoutSession.Status;
@@ -6,14 +8,16 @@ namespace POC.Api.Features.Stripe.CheckoutSession.Status;
 public static class SessionStatus
 {
     public record Request(string SessionId);
-    public record Response(string Status, string Email);
 
-    public class Endpoint(ILogger<Endpoint> logger) : Endpoint<Request, Response>
+    public record Response(string Status, string? Email, string? BasketId);
+
+    public class Endpoint(AppDbContext dbContext) : Endpoint<Request, Response>
     {
         private readonly Lazy<SessionService> _checkoutSessionService = new(() => new SessionService());
+
         public override void Configure()
         {
-            Post("/status");
+            Get("/{SessionId}/status");
             Group<CheckoutSessionGroup>();
             Description(d => d
                 .Produces<Response>()
@@ -35,9 +39,13 @@ public static class SessionStatus
                 await SendNotFoundAsync(ct);
                 return;
             }
-            
-            var response = new Response(session.Status, session.CustomerDetails.Email ?? string.Empty);
-            logger.LogInformation("Customer email: {Email}", response.Email);
+
+            var basketId = await dbContext.CheckoutSessions
+                .Where(s => s.SessionId == session.Id)
+                .Select(s => (Guid?)s.Order.BasketId)
+                .FirstOrDefaultAsync(ct);
+
+            var response = new Response(session.Status, session.CustomerDetails?.Email, basketId?.ToString());
             await SendOkAsync(response, ct);
         }
     }

@@ -1,6 +1,8 @@
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using POC.Api.Common;
 using POC.Api.DTOs;
+using POC.Api.Features.Inventory.Seed;
 using POC.Api.Features.Orders.Shared;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
@@ -11,9 +13,9 @@ namespace POC.Api.Features.Orders.RemoveTickets;
 
 public static class RemoveTickets
 {
-    public record Request(Guid BasketId, string SessionId, List<long> SeatIds);
+    public record Request(Guid BasketId, List<long> SeatIds);
 
-    public record Response(UpdateStatus Status, string? Message = null);
+    public record Response(UpdateStatus Status);
 
     public enum UpdateStatus
     {
@@ -48,13 +50,12 @@ public static class RemoveTickets
                 return;
             }
 
+            await RemoveTicketsFromOrder(req.BasketId, req.SeatIds, ct);
             var tickets = await dbContext.OrderTicketsAsync(req.BasketId, ct);
-            var ticketsToRemove = tickets
-                .Where(w => req.SeatIds.Contains(w.SeatId))
-                .ToList();
-
-            await RemoveTicketsFromOrder(ticketsToRemove, ct);
-            var response = await RemoveTicketsFromSession(req.SessionId, ticketsToRemove, ct);
+            var remainingTickets = tickets
+                .Any(w => w.Value.Count > 0);
+            var status = remainingTickets ? UpdateStatus.Updated : UpdateStatus.Emptied;
+            var response = new Response(status);
             switch (response.Status)
             {
                 case UpdateStatus.Emptied:
@@ -73,10 +74,11 @@ public static class RemoveTickets
             }
         }
 
-        private async Task RemoveTicketsFromOrder(List<TicketDTO> tickets, CancellationToken cancellationToken)
+        private async Task RemoveTicketsFromOrder(Guid basketId, List<long> seatIds, CancellationToken cancellationToken)
         {
-            var seatIds = tickets.Select(s => s.SeatId).ToList();
             var seatsToUpdate = await dbContext.Seats
+                .Where(w => w.OrderItemId != null)
+                .Where(w => w.OrderItem!.Order.BasketId == basketId)
                 .Where(w => seatIds.Contains(w.Id))
                 .ToListAsync(cancellationToken);
             foreach (var seat in seatsToUpdate)
@@ -84,70 +86,47 @@ public static class RemoveTickets
                 seat.OrderItemId = null;
             }
 
+            await HandleBookingProtection(seatsToUpdate, basketId, cancellationToken);
+            await HandleVouchersAsync(seatsToUpdate, cancellationToken);
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        private async Task<Response> RemoveTicketsFromSession(string sessionId, List<TicketDTO> tickets, CancellationToken cancellationToken)
+        private async Task HandleBookingProtection(List<Seat> seatsToUpdate, Guid basketId, CancellationToken cancellationToken)
         {
-            try
+            var hasPerformance = await dbContext.Seats
+                .Where(w => !seatsToUpdate.Select(s => s.Id).Contains(w.Id))
+                .Where(w => w.OrderItemId != null)
+                .Where(w => w.OrderItem!.Order.BasketId == basketId)
+                .Where(w => w.PerformanceId > 0)
+                .AnyAsync(cancellationToken);
+
+            var hasBookingProtection = await dbContext.Seats
+                .Where(w => w.OrderItemId != null)
+                .Where(w => w.OrderItem!.Order.BasketId == basketId)
+                .Where(w => w.PerformanceId == Seed.BookingProtection.Performances.First().Id)
+                .AnyAsync(cancellationToken);
+
+            if (!hasPerformance && hasBookingProtection)
             {
-                var service = new SessionService();
-                var lineItems = await service.LineItems.ListAsync(sessionId, cancellationToken: cancellationToken);
-                var remainingItems = new Dictionary<string, long?>();
-                foreach (var lineItem in lineItems)
+                var bookingProtection = await dbContext.Seats
+                    .Where(w => w.OrderItemId != null)
+                    .Where(w => w.OrderItem!.Order.BasketId == basketId)
+                    .Where(w => w.PerformanceId == Seed.BookingProtection.Performances.First().Id)
+                    .ToListAsync(cancellationToken);
+                foreach (var seat in bookingProtection)
                 {
-                    // if (!lineItem.Metadata.TryGetValue("eventId", out var eventId) ||
-                    //     !lineItem.Metadata.TryGetValue("performanceId", out var performanceId) ||
-                    //     !lineItem.Metadata.TryGetValue("priceId", out var priceId))
-                    // {
-                    //     // Skip this item, will remain
-                    //     remainingItems[lineItem.Id] = lineItem.Quantity;
-                    //     continue;
-                    // }
-                    //
-                    // var priceBandTickets = tickets.Where(w => w.EventId.ToString() == eventId &&
-                    //                                           w.PerformanceId.ToString() == performanceId &&
-                    //                                           w.PriceId.ToString() == priceId).ToList();
-
-                    //PSEUDO MAP: Not ensured mapped only by price band
-                    var lineItemPrice = lineItem.Price.UnitAmount / 100m;
-                    var priceBandTickets = tickets
-                        .Where(w => w.Price == lineItemPrice)
-                        .ToList();
-                    //END PSEUDO MAP
-                    if (priceBandTickets.Count == 0)
-                    {
-                        // No tickets to remove for this price band, keep the item
-                        remainingItems[lineItem.Id] = lineItem.Quantity;
-                        continue;
-                    }
-
-                    var newQuantity = lineItem.Quantity - priceBandTickets.Count;
-
-                    remainingItems[lineItem.Id] = newQuantity;
+                    seat.OrderItemId = null;
                 }
-
-                if (remainingItems.Count(w => w.Value > 0) == 0)
-                {
-                    return new Response(UpdateStatus.Emptied);
-                }
-
-                var updateOptions = new SessionUpdateOptions
-                {
-                    LineItems = remainingItems.Where(w => w.Value > 0).Select(item => new SessionLineItemOptions
-                    {
-                        Id = item.Key,
-                        Quantity = item.Value
-                    }).ToList()
-                };
-                await service.UpdateAsync(sessionId, updateOptions, cancellationToken: cancellationToken);
             }
-            catch (Exception e)
-            {
-                return new Response(UpdateStatus.Error, e.Message);
-            }
+        }
 
-            return new Response(UpdateStatus.Updated);
+        private Task HandleVouchersAsync(List<Seat> seatsToUpdate, CancellationToken cancellationToken)
+        {
+            var vouchersToRemoveIds = seatsToUpdate.Where(w => w.PerformanceId == Seed.Voucher.Performances.First().Id).Select(s => s.Id).ToList();
+
+            return dbContext.Vouchers.Where(w => vouchersToRemoveIds.Contains(w.SeatId))
+                .ExecuteDeleteAsync(cancellationToken);
         }
     }
 }

@@ -1,5 +1,6 @@
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using POC.Api.Common;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
 using Order = POC.Api.Persistence.Entities.Order;
@@ -12,7 +13,7 @@ public static class BuyVoucher
 
     public record Response(Guid BasketId);
 
-    public class Endpoint(AppDbContext dbContext) : Endpoint<Request, Response>
+    public class Endpoint(AppDbContext dbContext, VouchersService vouchersService) : Endpoint<Request, Response>
     {
         public override void Configure()
         {
@@ -32,9 +33,24 @@ public static class BuyVoucher
 
         public override async Task HandleAsync(Request req, CancellationToken ct)
         {
-            long? orderId = null;
-            Guid basketId = req.BasketId ?? Guid.NewGuid();
-            if (req.BasketId is null)
+            var (orderId, basketId) = await EnsureOrderCreated(req.BasketId, ct);
+            if (orderId is null)
+            {
+                await SendNotFoundAsync(ct);
+                return;
+            }
+
+            await vouchersService.BuyVoucherAsync(orderId.Value, req.Price, ct);
+
+            var response = new Response(basketId);
+            await SendAsync(response, StatusCodes.Status201Created, ct);
+        }
+
+        private async Task<(long? OrderId, Guid BasketId)> EnsureOrderCreated(Guid? requestBasketId, CancellationToken cancellationToken)
+        {
+            long? orderId;
+            Guid basketId = requestBasketId ?? Guid.NewGuid();
+            if (requestBasketId is null)
             {
                 var order = new Order
                 {
@@ -42,59 +58,17 @@ public static class BuyVoucher
                     Status = OrderStatus.Created
                 };
                 var entity = dbContext.Orders.Add(order);
-                await dbContext.SaveChangesAsync(ct);
+                await dbContext.SaveChangesAsync(cancellationToken);
                 orderId = entity.Entity.Id;
             }
             else
             {
-                orderId = await dbContext.Orders.Where(w => w.BasketId == req.BasketId)
+                orderId = await dbContext.Orders.Where(w => w.BasketId == requestBasketId)
                     .Select(s => (long?)s.Id)
-                    .FirstOrDefaultAsync(ct);
-                if (orderId is null)
-                {
-                    await SendNotFoundAsync(ct);
-                    return;
-                }
+                    .FirstOrDefaultAsync(cancellationToken);
             }
 
-            var priceId = await GetPriceId(req.Price, ct);
-            var orderItem = new OrderItem
-            {
-                OrderId = orderId.Value,
-                Seats =
-                [
-                    new Seat
-                    {
-                        Row = Guid.NewGuid().ToString(),
-                        Number = 0,
-                        PriceId = priceId,
-                        PerformanceId = -1 // Voucher-specific performance
-                    }
-                ]
-            };
-            dbContext.OrderItems.Add(orderItem);
-            await dbContext.SaveChangesAsync(ct);
-
-            var response = new Response(basketId);
-            await SendAsync(response, StatusCodes.Status201Created, ct);
-        }
-
-        private async Task<long> GetPriceId(decimal price, CancellationToken cancellationToken)
-        {
-            var existingPrice = await dbContext.Prices
-                .Where(p => p.Name.StartsWith(VouchersGroup.VoucherPrefix))
-                .Where(p => p.Amount == price)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (existingPrice is not null)
-            {
-                return existingPrice.Id;
-            }
-
-            var newPrice = new Price { Amount = price, Name = $"{VouchersGroup.VoucherPrefix}{price:N3}" };
-            var entity = dbContext.Prices.Add(newPrice).Entity;
-            await dbContext.SaveChangesAsync(cancellationToken);
-            return entity.Id;
+            return (orderId, basketId);
         }
     }
 }

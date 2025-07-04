@@ -2,12 +2,13 @@
 
 import React, {useState, useEffect} from "react";
 import {Event, Performance, Seat} from "@/types/Inventory";
-import {addSeatsToOrder, createOrder, getEvents, getSeats} from "@/utils/api";
 import {getCurrentBasketId, setCurrentBasketId} from "@/utils/basketIdProvider";
 import {useRouter} from "next/navigation";
+import {useApi} from "@/utils/api";
 
 const SeatPlan: React.FC = () => {
   const router = useRouter();
+  const api = useApi();
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedPerformance, setSelectedPerformance] = useState<Performance | null>(null);
@@ -21,7 +22,7 @@ const SeatPlan: React.FC = () => {
     const fetchEvents = async () => {
       try {
         setIsLoading(true);
-        const response = await getEvents();
+        const response = await api.inventory.getEvents();
         setEvents(response.events);
       } catch (err) {
         setError('Failed to fetch events');
@@ -44,7 +45,7 @@ const SeatPlan: React.FC = () => {
   const fetchSeats = async (performanceId: number) => {
     try {
       setIsLoading(true);
-      const response = await getSeats(performanceId);
+      const response = await api.inventory.getSeats(performanceId);
       setSeats(response.seats);
     } catch (err) {
       setError('Failed to fetch seats');
@@ -114,12 +115,12 @@ const SeatPlan: React.FC = () => {
     try {
       setIsLoading(true);
 
-      const response = basketId
-        ? await addSeatsToOrder(basketId!, selectedSeats.map(seat => seat.id))
-        : await createOrder(selectedSeats.map(seat => seat.id));
+      const responseBasketId = basketId
+        ? await api.orders.addSeats(basketId!, selectedSeats.map(seat => seat.id))
+        : await api.orders.create(selectedSeats.map(seat => seat.id));
 
-      setBasketId(response.basketId);
-      setCurrentBasketId(response.basketId);
+      setBasketId(responseBasketId);
+      setCurrentBasketId(responseBasketId);
 
       setSelectedSeats([]);
       router.push('./../checkout-session');
@@ -133,7 +134,7 @@ const SeatPlan: React.FC = () => {
 
   // Group seats by row
   const seatsByRow = seats.reduce((acc, seat) => {
-    const rowKey = `${seat.row} (£ ${seat.amount})`;
+    const rowKey = `${seat.row} (£ ${seat.amount} - ${seat.priceName})`;
     if (!acc[rowKey]) {
       acc[rowKey] = [];
     }
@@ -170,36 +171,27 @@ const SeatPlan: React.FC = () => {
           height: '100%',
           backgroundColor: 'rgba(0, 0, 0, 0.2)',
           display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000
         }}>
+          {/* Spinner */}
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '16px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            width: '40px',
+            height: '40px',
+            border: '3px solid #e5e7eb',
+            borderTop: '3px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <div style={{
+            fontSize: '18px',
+            color: '#374151',
+            fontWeight: '500'
           }}>
-            {/* Spinner */}
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid #e5e7eb',
-              borderTop: '3px solid #3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }}></div>
-            <div style={{
-              fontSize: '18px',
-              color: '#374151',
-              fontWeight: '500'
-            }}>
-              Loading...
-            </div>
+            Loading...
           </div>
         </div>
       )}
@@ -347,7 +339,7 @@ const SeatPlan: React.FC = () => {
                 ))}
               </select>
             </div>
-            
+
             <div style={{
               display: 'flex',
               marginTop: 'auto',

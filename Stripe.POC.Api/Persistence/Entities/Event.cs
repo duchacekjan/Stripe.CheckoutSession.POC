@@ -1,9 +1,8 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace POC.Api.Persistence.Entities;
 
-[Table("Events")]
 public class Event : Entity
 {
     public string Name { get; set; } = string.Empty;
@@ -12,7 +11,7 @@ public class Event : Entity
 
 public class EventEntityConfiguration : IEntityTypeConfiguration<Event>
 {
-    public void Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<Event> builder)
+    public void Configure(EntityTypeBuilder<Event> builder)
     {
         builder.HasKey(t => t.Id);
         builder.Property(p => p.Name).HasMaxLength(100).IsRequired();
@@ -20,5 +19,6 @@ public class EventEntityConfiguration : IEntityTypeConfiguration<Event>
             .WithOne(o=>o.Event)
             .HasForeignKey(f => f.EventId)
             .OnDelete(DeleteBehavior.Cascade); // Assuming you want to delete performances when event is deleted
+        builder.ToTable("Events");
     }
 }

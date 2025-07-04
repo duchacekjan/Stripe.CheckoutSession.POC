@@ -59,3 +59,31 @@ Accept: application/json
 Content-Type: application/json
 Authorization: {{token}}
 
+###
+@sessionId = cs_test_b1ycQG6gguJbgrSS0d20Pv4PLSOohrqNrxe5y8YeGEXbVH8Id1PBtyHO6W
+GET {{host}}/stripe/checkout-session/{{sessionId}}/status
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
+
+###
+@basketIdPaid = 6739b5d4-f1fc-4372-9d5f-f72f9c46951b
+POST {{host}}/orders/{{basketIdPaid}}/set-paid
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
+
+
+###
+@basketFinalize = B7EE013C-3FC1-4311-9B40-49FC28A4B2DE
+
+POST {{host}}/orders/{{basketFinalize}}/finalize
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}
+
+###
+POST {{host}}/vouchers/buy
+Accept: application/json
+Content-Type: application/json
+Authorization: {{token}}

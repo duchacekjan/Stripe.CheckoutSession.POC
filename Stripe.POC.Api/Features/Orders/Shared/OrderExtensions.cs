@@ -6,18 +6,13 @@ namespace POC.Api.Features.Orders.Shared;
 
 internal static class OrderExtensions
 {
-    public static async Task<List<TicketDTO>> OrderTicketsAsync(
-        this AppDbContext dbContext, Guid basketId, CancellationToken cancellationToken = default)
-    {
-        var orderItemIds = await dbContext.OrderItems
+    public static async Task<Dictionary<long, List<TicketDTO>>> OrderTicketsAsync(
+        this AppDbContext dbContext, Guid basketId, CancellationToken cancellationToken = default) =>
+        await dbContext.OrderItems
             .Where(w => w.Order.BasketId == basketId)
-            .Select(s => (long?)s.Id)
-            .ToListAsync(cancellationToken);
-        return await dbContext.Seats
-            .Where(w => orderItemIds.Contains(w.OrderItemId))
-            .Select(seat =>
+            .Include(i => i.Seats).ThenInclude(t => t.Performance).ThenInclude(t => t.Event)
+            .Include(i => i.Seats).ThenInclude(t => t.Price)
+            .ToDictionaryAsync(k => k.Id, v => v.Seats.Select(seat =>
                 new TicketDTO(seat.Performance.EventId, seat.Performance.Event.Name, seat.PerformanceId, seat.Performance.PerformanceDate, seat.PriceId, seat.Price.Amount, seat.Id, seat.Row,
-                    seat.Number))
-            .ToListAsync(cancellationToken);
-    }
+                    seat.Number)).ToList(), cancellationToken);
 }

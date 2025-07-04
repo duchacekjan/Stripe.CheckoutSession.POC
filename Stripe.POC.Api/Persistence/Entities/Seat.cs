@@ -1,10 +1,8 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace POC.Api.Persistence.Entities;
 
-[Table("Seats")]
 public class Seat : Entity
 {
     public string Row { get; set; } = string.Empty;
@@ -28,5 +26,7 @@ public class SeatEntityConfiguration : IEntityTypeConfiguration<Seat>
             .WithMany(p => p.Seats)
             .HasForeignKey(f => f.PerformanceId)
             .OnDelete(DeleteBehavior.Cascade); // Assuming you want to delete seats when performance is deleted
+        
+        builder.ToTable("Seats");
     }
 }

@@ -17,16 +17,45 @@ export interface AddSeatsToOrderResponse {
 }
 
 export interface GetTicketsResponse {
-  tickets: Ticket[];
+  tickets: Record<number, Ticket[]>;
+  redeemedVouchers: Voucher[];
+  totalPrice: number;
 }
 
 export interface RemoveTicketsRequest {
-  sessionId: string;
   seatIds: number[];
 }
 
 export interface RemoveTicketsResponse {
   status: UpdateStatus;
+  message?: string;
+}
+
+export interface SetPaidResponse {
+  voucherCodes: string[];
+}
+
+export interface GetPaidOrdersResponse {
+  paidOrders: PaidOrder[];
+}
+
+export interface RefundRequest {
+  refundedAmount: number;
+}
+
+export interface PaidOrder {
+  orderId: number;
+  basketId: string;
+  tickets: Ticket[];
+  totalPrice: number;
+}
+
+export interface UpdateSessionRequest {
+  basketId: string;
+}
+
+export interface UpdateSessionResponse {
+  type: 'success' | 'error'
   message?: string;
 }
 
@@ -46,4 +75,10 @@ export interface Ticket {
   seatId: number;
   seatRow: string;
   seatNumber: number;
+}
+
+export interface Voucher {
+  id: number;
+  code: string;
+  amount: number;
 }
