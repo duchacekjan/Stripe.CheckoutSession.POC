@@ -86,6 +86,14 @@ public static class RemoveTickets
                 seat.OrderItemId = null;
             }
 
+            await HandleBookingProtection(seatsToUpdate, basketId, cancellationToken);
+            await HandleVouchersAsync(seatsToUpdate, cancellationToken);
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        private async Task HandleBookingProtection(List<Seat> seatsToUpdate, Guid basketId, CancellationToken cancellationToken)
+        {
             var hasPerformance = await dbContext.Seats
                 .Where(w => !seatsToUpdate.Select(s => s.Id).Contains(w.Id))
                 .Where(w => w.OrderItemId != null)
@@ -98,6 +106,7 @@ public static class RemoveTickets
                 .Where(w => w.OrderItem!.Order.BasketId == basketId)
                 .Where(w => w.PerformanceId == Seed.BookingProtection.Performances.First().Id)
                 .AnyAsync(cancellationToken);
+
             if (!hasPerformance && hasBookingProtection)
             {
                 var bookingProtection = await dbContext.Seats
@@ -110,8 +119,14 @@ public static class RemoveTickets
                     seat.OrderItemId = null;
                 }
             }
+        }
 
-            await dbContext.SaveChangesAsync(cancellationToken);
+        private Task HandleVouchersAsync(List<Seat> seatsToUpdate, CancellationToken cancellationToken)
+        {
+            var vouchersToRemoveIds = seatsToUpdate.Where(w => w.PerformanceId == Seed.Voucher.Performances.First().Id).Select(s => s.Id).ToList();
+
+            return dbContext.Vouchers.Where(w => vouchersToRemoveIds.Contains(w.SeatId))
+                .ExecuteDeleteAsync(cancellationToken);
         }
     }
 }
