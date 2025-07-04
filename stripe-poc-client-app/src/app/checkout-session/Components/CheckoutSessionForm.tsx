@@ -68,6 +68,7 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
       // redirected to the `return_url`.
       if (confirmResult.type === 'error') {
         setMessage(confirmResult.error.message);
+        await api.orders.setPaymentFailed(basketId);
       }
     } catch (error) {
       setMessage(`Failed to finalize order. Please try again. ${error}`);
