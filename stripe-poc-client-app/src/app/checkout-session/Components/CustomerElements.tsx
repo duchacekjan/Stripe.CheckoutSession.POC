@@ -75,7 +75,7 @@ const CustomerElements: React.FC<CustomerElementsProps> = ({
             value={email}
             onChange={handleChange}
             onBlur={handleBlur}
-            style={{fontSize: '12pt'}}
+            style={{fontSize: '12pt', minHeight: '38px', borderRadius: '4px', border: '1px solid #e5e7eb', padding: '4px'}}
             placeholder="you@example.com"
           />
           {error && <div style={{color: 'red', fontSize: '11pt'}}>{error}</div>}

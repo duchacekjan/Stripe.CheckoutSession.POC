@@ -13,13 +13,15 @@ interface CheckoutSummaryProps {
   bookingProtection: boolean;
   setBookingProtection: (protection: boolean) => void;
   setIsLoading: (loading: boolean) => void;
+  setHasVoucher: (hasVoucher: boolean) => void;
 }
 
 const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
                                                            setHasPerformance,
                                                            bookingProtection,
                                                            setBookingProtection,
-                                                           setIsLoading
+                                                           setIsLoading,
+                                                           setHasVoucher
                                                          }) => {
   const checkout = useCheckout();
   const router = useRouter();
@@ -53,6 +55,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     setBasketTotal(response.totalPrice.toFixed(2))
     const allTickets = Object.values(response.tickets).flat();
     setHasPerformance(allTickets.some(ticket => ticket.performanceId > 0));
+    setHasVoucher(allTickets.some(ticket => ticket.performanceId === -1));
     setBookingProtection(allTickets.some(ticket => ticket.performanceId === -2));
     setIsLoading(false);
   }

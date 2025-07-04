@@ -4,10 +4,12 @@ import {CheckoutContextValue, CurrencySelectorElement, PaymentElement, useChecko
 import {useState} from "react";
 import CustomerElements from "@/app/checkout-session/Components/CustomerElements";
 import {useApi} from "@/utils/api";
+import VoucherInput from "@/app/checkout-session/Components/VoucherInput";
 
 interface CheckoutSessionFormProps {
   basketId: string;
   hasPerformance: boolean;
+  hasVoucher: boolean;
   bookingProtection: boolean;
   setBookingProtection: (protection: boolean) => void;
   isLoading: boolean;
@@ -24,6 +26,7 @@ const validateEmail = async (email: string, checkout: CheckoutContextValue) => {
 const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
                                                                    basketId,
                                                                    hasPerformance,
+                                                                   hasVoucher,
                                                                    bookingProtection,
                                                                    setBookingProtection,
                                                                    isLoading,
@@ -91,9 +94,10 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
   return (
     <form onSubmit={handleSubmit}>
       <div style={{
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '8px'}}>
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
+      }}>
         <CustomerElements
           email={email}
           setEmail={setEmail}
@@ -104,7 +108,9 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
           bookingProtection={bookingProtection}
           setBookingProtection={handleBookingProtectionChange}
         />
-
+        <VoucherInput
+          hasVoucher={hasVoucher}
+        />
         <h4>Payment</h4>
         <PaymentElement id="payment-element"/>
         <CurrencySelectorElement/>

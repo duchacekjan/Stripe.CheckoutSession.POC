@@ -17,6 +17,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || ''
 const CheckoutSessionPage: React.FC = () => {
   const [basketId, setBasketId] = useState<string | null>(null);
   const [hasPerformance, setHasPerformance] = useState<boolean>(false);
+  const [hasVoucher, setHasVoucher] = useState<boolean>(false);
   const [bookingProtection, setBookingProtection] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -224,6 +225,7 @@ const CheckoutSessionPage: React.FC = () => {
                   <CheckoutSessionForm
                     basketId={basketId!}
                     hasPerformance={hasPerformance}
+                    hasVoucher={hasVoucher}
                     bookingProtection={bookingProtection}
                     setBookingProtection={handleChangeBookingProtection}
                     isLoading={isLoading}
@@ -233,7 +235,8 @@ const CheckoutSessionPage: React.FC = () => {
                     setHasPerformance={setHasPerformance}
                     bookingProtection={bookingProtection}
                     setBookingProtection={handleChangeBookingProtection}
-                    setIsLoading={handleLoadingQueue}/>
+                    setIsLoading={handleLoadingQueue}
+                    setHasVoucher={setHasVoucher}/>
                 </div>
               </div>
             </CheckoutProvider>
