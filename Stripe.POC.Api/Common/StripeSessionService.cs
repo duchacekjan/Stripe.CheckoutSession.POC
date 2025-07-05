@@ -4,6 +4,7 @@ using POC.Api.DTOs;
 using POC.Api.Features.Orders.Shared;
 using POC.Api.Persistence;
 using POC.Api.Persistence.Entities;
+using POC.Api.Stripe.Beta;
 using Stripe;
 using Stripe.Checkout;
 
@@ -92,21 +93,11 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
             return session with { Status = "empty" };
         }
 
-        var updateOptions = new SessionUpdateOptions
+        var updateOptions = new SessionUpdateOptionsBeta
         {
             LineItems = updatedItems
         };
-
-        if (vouchers.Count > 0)
-        {
-            // var totalDiscount = vouchers.Sum(s => s.Amount);
-            // updateOptions.AddExtraParam("coupon_data", new CouponData
-            // {
-            //     Name = "Voucher Discount",
-            //     AmountOff = (long)totalDiscount * 100,
-            //     Currency = "gbp",
-            // });
-        }
+        updateOptions.AddVouchers(vouchers);
 
         var checkoutSession = await _checkoutSessionService.Value.UpdateAsync(session.SessionId, updateOptions, cancellationToken: ct);
         return new Session(checkoutSession.ClientSecret, checkoutSession.Id, checkoutSession.Status);
@@ -218,7 +209,7 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
 
     private async Task<Session> CreateCheckoutSessionAsync(Guid basketId, List<SessionLineItemOptions> items, CancellationToken ct)
     {
-        var options = new SessionCreateOptions
+        var options = new SessionCreateOptionsBeta
         {
             UiMode = "custom",
             Permissions = new SessionPermissionsOptions
@@ -237,9 +228,6 @@ public class StripeSessionService(AppDbContext dbContext, IOptions<StripeConfig>
                 }
             }
         };
-
-        //TODO When full version is out, then set in SessionPermissionOptions
-        options.AddExtraParam("permissions[update_discounts]", "server_only");
 
         var session = await _checkoutSessionService.Value.CreateAsync(options, cancellationToken: ct);
         return new Session(session.ClientSecret, session.Id, session.Status);
