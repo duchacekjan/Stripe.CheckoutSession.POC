@@ -124,11 +124,18 @@ const CheckoutSessionForm: React.FC<CheckoutSessionFormProps> = ({
           hasVoucher={hasVoucher}
           voucherApplied={handleVoucherApplied}
         />
-        <h4>Payment</h4>
-        <PaymentElement id="payment-element"/>
-        <CurrencySelectorElement/>
+        {checkout.total.total.minorUnitsAmount > 0 && (
+          <>
+            <h4>Payment</h4>
+            <PaymentElement id="payment-element"/>
+            <CurrencySelectorElement/>
+          </>
+        )}
+
         <button disabled={isLoading} id="submit">
-          Pay {checkout.total.total.amount} now
+          {checkout.total.total.minorUnitsAmount <= 0
+            ? 'Finish'
+            : `Pay ${checkout.total.total.amount} now`}
         </button>
         {/* Show any error or success messages */}
         {message && <div style={{color: 'red', fontSize: '11pt'}}>{message}</div>}

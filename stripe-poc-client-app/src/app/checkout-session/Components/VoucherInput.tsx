@@ -7,7 +7,7 @@ import axios from "axios";
 
 interface VoucherInputProps {
   hasVoucher: boolean;
-  voucherApplied: () => void;
+  voucherApplied: () => Promise<void>;
 }
 
 const VoucherInput: React.FC<VoucherInputProps> = ({
@@ -49,8 +49,9 @@ const VoucherInput: React.FC<VoucherInputProps> = ({
         setError(response.message || "Invalid voucher code");
       } else {
         await api.vouchers.redeem(basketId!, code);
+        await voucherApplied();
         setSuccess("Voucher applied successfully!");
-        voucherApplied();
+        setCode('');
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
